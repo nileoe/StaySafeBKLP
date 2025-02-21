@@ -4,7 +4,7 @@ import SwiftUI
 struct StaySafeBKLPApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
         }
     }
 }
