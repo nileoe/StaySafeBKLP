@@ -4,11 +4,14 @@ struct MapView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
                 Text("Map")
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
             }
             .navigationTitle("Map")
         }
     }
+}
+
+#Preview {
+    MapView()
 }

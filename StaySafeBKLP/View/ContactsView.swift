@@ -4,11 +4,14 @@ struct ContactsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
                 Text("Contacts")
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
             }
             .navigationTitle("Contacts")
         }
     }
+}
+
+#Preview {
+    ContactsView()
 }

@@ -5,7 +5,7 @@ struct MainTabView: View {
    @State private var keyboardIsVisible = false
 
    enum Tab {
-       case home, library, map, contacts, profile
+       case home, trips, map, contacts, profile
    }
 
    var body: some View {
@@ -14,8 +14,8 @@ struct MainTabView: View {
                switch selectedTab {
                case .home:
                    HomeView()
-               case .library:
-                   LibraryView()
+               case .trips:
+                   TripsView()
                case .map:
                    MapView()
                case .contacts:
@@ -26,7 +26,7 @@ struct MainTabView: View {
            }
            .frame(maxWidth: .infinity, maxHeight: .infinity)
            .padding(.bottom, keyboardIsVisible ? 0 : 60)
-           .background(Color.black.ignoresSafeArea())
+//           .background(Color.black.ignoresSafeArea())
            .navigationBarBackButtonHidden(true)
 
            if !keyboardIsVisible {
@@ -49,16 +49,16 @@ struct MainTabView: View {
        VStack {
            Spacer()
            RoundedRectangle(cornerRadius: 20)
-               .fill(Color(.systemGray6).opacity(0.9))
-               .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: -4)
+               .fill(Color(.systemGray6).opacity(0.8))
+               .shadow(color: .primary.opacity(0.15), radius: 8, x: 0, y: -4)
                .frame(height: 90)
                .overlay(
                    HStack {
                        navItem(icon: "house.fill", label: "Home", tab: .home)
-                       navItem(icon: "books.vertical.fill", label: "Library", tab: .library)
-                       navItem(icon: "person.crop.circle.fill.fill", label: "Contacts", tab: .contacts)
-                       navItem(icon: "map.fill", label: "Favorites", tab: .map)
-                       navItem(icon: "person.fill", label: "Profile", tab: .profile)
+                       navItem(icon: "figure.hiking", label: "Trips", tab: .trips)
+                       navItem(icon: "map.fill", label: "Map", tab: .map)
+                       navItem(icon: "person.2.fill", label: "Contacts", tab: .contacts)
+                       navItem(icon: "person.crop.circle.fill", label: "Profile", tab: .profile)
                    }
                    .padding(.bottom, 20)
                    .padding(.horizontal, 10)
@@ -78,6 +78,7 @@ struct MainTabView: View {
                    .scaleEffect(selectedTab == tab ? 1.2 : 1.0)
                    .fontWeight(selectedTab == tab ? .bold : .regular)
                    .shadow(color: selectedTab == tab ? Color.blue.opacity(0.3) : Color.clear, radius: selectedTab == tab ? 10 : 0, x: 0, y: selectedTab == tab ? 5 : 0)
+                   .padding(.bottom, 0.1)
 
                Text(label)
                    .font(.footnote)
