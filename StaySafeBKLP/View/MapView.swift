@@ -17,6 +17,7 @@ struct UIKitMapView: UIViewRepresentable {
     func updateUIView(_ uiView: MKMapView, context: Context) {
         if followUser {
             uiView.setRegion(region, animated: true)
+            followUser = false
         }
     }
 
@@ -32,8 +33,6 @@ struct UIKitMapView: UIViewRepresentable {
         }
     }
 }
-
-import CoreLocation
 
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
@@ -99,22 +98,60 @@ struct MapView: View {
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
     
+    private func setInitialUserLocation(_ location: CLLocationCoordinate2D?) {
+        if !initialLocationSet, let userLocation = location {
+            region = MKCoordinateRegion(
+                center: userLocation,
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+            followUser = true
+            initialLocationSet = true
+        }
+    }
+
     @State private var followUser = false  // Controls whether to track the user
+    @State private var initialLocationSet = false
 
     var body: some View {
         NavigationStack {
-            UIKitMapView(region: $region, followUser: $followUser)
-                .ignoresSafeArea()
-                .navigationTitle("Map")
-                .onReceive(locationManager.$userLocation) { newLocation in
-                    if let newLocation = newLocation {
-                        region = MKCoordinateRegion(
-                            center: newLocation,
-                            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-                        )
-                        followUser = true // Enable tracking
+            ZStack {
+                UIKitMapView(region: $region, followUser: $followUser)
+                    .ignoresSafeArea()
+
+                VStack {
+                    Spacer()
+                    
+                    // Recenter button
+                    HStack {
+                        Spacer()
+                        
+                        Button(action: {
+                            if let userLocation = locationManager.userLocation {
+                                region = MKCoordinateRegion(
+                                    center: userLocation,
+                                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                )
+                                followUser = true
+                            }
+                        }) {
+                            Image(systemName: "location.fill")
+                                .padding()
+                                .background(Color.white.opacity(0.8))
+                                .clipShape(Circle())
+                                .shadow(radius: 4)
+                        }
+                        .padding(.bottom, 30)
                     }
+                    .padding(.trailing, 20)
                 }
+            }
+            .navigationTitle("Map")
+            .onReceive(locationManager.$userLocation) { location in
+                setInitialUserLocation(location)
+            }
+            .onAppear {
+                setInitialUserLocation(locationManager.userLocation)
+            }
         }
     }
 }
