@@ -3,7 +3,7 @@ import SwiftUI
 // renaming from the API's 'Activity' to the app's name 'Trip' should probably be taken care of all in here
 import Foundation
 
-struct Trip: Codable {
+struct Trip: Codable, Identifiable {
     let id: Int
     var title: String
     let username: String

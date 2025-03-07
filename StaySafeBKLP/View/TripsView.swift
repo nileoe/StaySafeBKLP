@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TripsView: View {
-// for the life of me I kept running into errors when trying to supply the trips as an external argument. The data will use the API anyway so this is obviously temporary
+    // for the life of me I kept running into errors when trying to supply the trips as an external argument. The data will use the API anyway so this is obviously temporary
     var trips: [Trip] = [
         Trip(
             id: 1,
@@ -24,8 +24,10 @@ struct TripsView: View {
             userId: 1,
             departureLocationId: 10,
             departureLocationName: "Work",
+            departureTime: Calendar.current.date(from: DateComponents(year: 2025, month: 3, day: 5)),
             arrivalLocationId: 8,
             arrivalLocationName: "Surbiton Station",
+            arrivalTime: Calendar.current.date(from: DateComponents(year: 2025, month: 3, day: 5, hour: 18, minute: 0)),
             statusId: 5,
             statusName: "Completed"
         ),
@@ -37,10 +39,10 @@ struct TripsView: View {
             userId: 1,
             departureLocationId: 1,
             departureLocationName: "Berrylands Station",
-//            departureTime: Date(),
+            departureTime: Calendar.current.date(from: DateComponents(year: 2025, month: 4, day: 10)),
             arrivalLocationId: 11,
             arrivalLocationName: "Amina's",
-//            arrivalTime: Date(),
+            arrivalTime: Calendar.current.date(from: DateComponents(year: 2025, month: 4, day: 10, hour: 19, minute: 0)),
             statusId: 5,
             statusName: "Completed"
         )
@@ -59,61 +61,79 @@ struct TripsView: View {
     }
 }
 
-    struct TripCard: View {
-        var trip: Trip
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(trip.title)
-                    .font(.headline)
-                Text(trip.description)
-                    .font(.body)
-                    .lineLimit(2)
-                    .foregroundColor(.secondary)
-                
+struct TripCard: View {
+    var trip: Trip
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(trip.title)
+                .font(.headline)
+                .foregroundColor(.primary)
+            
+            Text(trip.description)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(2)
+            
+            Divider()
+            
+            if let departureTime = trip.departureTime {
                 HStack {
-                    VStack(alignment: .leading) {
-                        Text("Departure:")
-                            .font(.caption)
-                            .bold()
-                        Text(trip.departureLocationName)
-                            .font(.caption)
-                        if let departureTime = trip.departureTime {
-                            Text(departureTime, style: .date)
-                                .font(.caption)
-                        } else {
-                            Text("No arrival date recorded")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    Spacer()
-                    VStack(alignment: .leading) {
-                        Text("Arrival:")
-                            .font(.caption)
-                            .bold()
-                        Text(trip.arrivalLocationName)
-                            .font(.caption)
-                        if let arrivalTime = trip.arrivalTime {
-                            Text(arrivalTime, style: .date)
-                                .font(.caption)
-                        } else {
-                            Text("No arrival date recorded")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundColor(.blue)
+                    Text("Departure: \(trip.departureLocationName) at \(formattedDate(departureTime))")
+                        .font(.caption)
+                        .foregroundColor(.primary)
                 }
-                Text("Status: \(trip.statusName)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(10)
-            .shadow(radius: 5)
+            
+            if let arrivalTime = trip.arrivalTime {
+                HStack {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .foregroundColor(.green)
+                    Text("Arrival: \(trip.arrivalLocationName) at \(formattedDate(arrivalTime))")
+                        .font(.caption)
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            Divider()
+            
+            HStack {
+                Image(systemName: "circle.fill")
+                    .foregroundColor(statusColor(for: trip.statusName))
+                Text(trip.statusName)
+                    .font(.caption)
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(10)
+        .shadow(radius: 5)
+        .padding(.horizontal)
+    }
+    
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    
+    private func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "completed":
+            return .green
+        case "in progress":
+            return .orange
+        case "cancelled":
+            return .red
+        default:
+            return .gray
         }
     }
+}
 
 #Preview {
     TripsView()
