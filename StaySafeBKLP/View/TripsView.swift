@@ -1,61 +1,29 @@
 import SwiftUI
 
 struct TripsView: View {
-    // for the life of me I kept running into errors when trying to supply the trips as an external argument. The data will use the API anyway so this is obviously temporary
-    var trips: [Trip] = [
-        Trip(
-            id: 1,
-            title: "Walk home",
-            username: "aishaahmed",
-            description: "Walk from university to Surbiton train station",
-            userId: 1,
-            departureLocationId: 10,
-            departureLocationName: "Work",
-            arrivalLocationId: 8,
-            arrivalLocationName: "Surbiton Station",
-            statusId: 1,
-            statusName: "Planned"
-        ),
-        Trip(
-            id: 2,
-            title: "Walk home",
-            username: "aishaahmed",
-            description: "Walk from university to Surbiton train station",
-            userId: 1,
-            departureLocationId: 10,
-            departureLocationName: "Work",
-            departureTime: Calendar.current.date(from: DateComponents(year: 2025, month: 3, day: 5)),
-            arrivalLocationId: 8,
-            arrivalLocationName: "Surbiton Station",
-            arrivalTime: Calendar.current.date(from: DateComponents(year: 2025, month: 3, day: 5, hour: 18, minute: 0)),
-            statusId: 5,
-            statusName: "Completed"
-        ),
-        Trip(
-            id: 3,
-            title: "Visiting Amina",
-            username: "aishaahmed",
-            description: "Dinner at Amina's at 7pm",
-            userId: 1,
-            departureLocationId: 1,
-            departureLocationName: "Berrylands Station",
-            departureTime: Calendar.current.date(from: DateComponents(year: 2025, month: 4, day: 10)),
-            arrivalLocationId: 11,
-            arrivalLocationName: "Amina's",
-            arrivalTime: Calendar.current.date(from: DateComponents(year: 2025, month: 4, day: 10, hour: 19, minute: 0)),
-            statusId: 5,
-            statusName: "Completed"
-        )
-    ]
+    @State private var trips: [Trip] = []
     var body: some View {
         NavigationView {
             List {
                 ForEach(
                     trips, id: \.id) { trip in
                         TripCard(trip: trip)
-                            .padding(.vertical, 5)
+                            .padding(.vertical, 2)
                     }
-                    .navigationTitle("Trips")
+                    .navigationTitle("My Trips")
+            }
+        }
+        .task {
+            do {
+                trips = try await getAllTrips()
+            } catch TripError.invalidData {
+                print("Fetching trips: invalid data")
+            } catch TripError.invalidURL {
+                print("Fetching trips: invalid url")
+            } catch TripError.invalidResponse {
+                print("Fetching trips: invalid response")
+            } catch {
+                print("unexpected error")
             }
         }
     }
@@ -64,8 +32,37 @@ struct TripsView: View {
 struct TripCard: View {
     var trip: Trip
     
+    private var arrivalTimeString: String {
+        if let arrivalTime = trip.arrivalTime {
+            return "Arrival: \(trip.arrivalLocationName) at \(formattedDate(arrivalTime))"
+        } else {
+            return "No arrival time recorded"
+       }
+    }
+    private var departureTimeString: String {
+        if let departureTime = trip.departureTime {
+            return "Departure: \(trip.departureLocationName) at \(formattedDate(departureTime))"
+        } else {
+            return "No departure time recorded"
+       }
+    }
+    
+    private var departureIconName: String {
+         return trip.departureTime != nil ? "arrow.up.circle.fill" : "questionmark.circle.fill"
+     }
+     private var arrivalIconName: String {
+         return trip.arrivalTime != nil ? "arrow.down.circle.fill" : "questionmark.circle.fill"
+     }
+    
+    private var arrivalIconColor: Color {
+        return trip.arrivalTime != nil ? .blue: .orange
+    }
+    private var departureIconColor: Color {
+        return trip.departureTime != nil ? .green  : .orange
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
             Text(trip.title)
                 .font(.headline)
                 .foregroundColor(.primary)
@@ -77,24 +74,20 @@ struct TripCard: View {
             
             Divider()
             
-            if let departureTime = trip.departureTime {
-                HStack {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .foregroundColor(.blue)
-                    Text("Departure: \(trip.departureLocationName) at \(formattedDate(departureTime))")
-                        .font(.caption)
-                        .foregroundColor(.primary)
-                }
+            HStack {
+                Image(systemName: departureIconName)
+                    .foregroundColor(departureIconColor)
+                Text(departureTimeString)
+                    .font(.caption)
+                    .foregroundColor(.primary)
             }
-            
-            if let arrivalTime = trip.arrivalTime {
-                HStack {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .foregroundColor(.green)
-                    Text("Arrival: \(trip.arrivalLocationName) at \(formattedDate(arrivalTime))")
-                        .font(.caption)
-                        .foregroundColor(.primary)
-                }
+
+            HStack {
+                Image(systemName: arrivalIconName)
+                    .foregroundColor(arrivalIconColor)
+                Text(arrivalTimeString)
+                    .font(.caption)
+                    .foregroundColor(.primary)
             }
             
             Divider()
@@ -111,7 +104,7 @@ struct TripCard: View {
         .background(Color(.systemBackground))
         .cornerRadius(10)
         .shadow(radius: 5)
-        .padding(.horizontal)
+//        .padding(.horizontal)
     }
     
     private func formattedDate(_ date: Date) -> String {
