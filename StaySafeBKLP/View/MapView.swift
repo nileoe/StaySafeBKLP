@@ -1,161 +1,137 @@
-import SwiftUI
-import MapKit
 import CoreLocation
-
-struct UIKitMapView: UIViewRepresentable {
-    @Binding var region: MKCoordinateRegion
-    @Binding var followUser: Bool
-
-    func makeUIView(context: Context) -> MKMapView {
-        let mapView = MKMapView(frame: .zero)
-        mapView.showsUserLocation = true
-        mapView.delegate = context.coordinator
-        mapView.setRegion(region, animated: false)
-        return mapView
-    }
-
-    func updateUIView(_ uiView: MKMapView, context: Context) {
-        if followUser {
-            uiView.setRegion(region, animated: true)
-            followUser = false
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, MKMapViewDelegate {
-        var parent: UIKitMapView
-
-        init(_ parent: UIKitMapView) {
-            self.parent = parent
-        }
-    }
-}
-
-class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
-    
-    @Published var userLocation: CLLocationCoordinate2D?
-    
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-        
-        DispatchQueue.main.async {
-            self.manager.requestWhenInUseAuthorization()
-        }
-        
-        manager.startUpdatingLocation()
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let latestLocation = locations.last else { return }
-        
-        DispatchQueue.main.async {
-            self.userLocation = latestLocation.coordinate
-        }
-        
-        // End any running background task to prevent system termination
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
-        }
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        switch status {
-        case .authorizedWhenInUse, .authorizedAlways:
-            startBackgroundTask()
-            manager.startUpdatingLocation()
-        case .denied, .restricted:
-            print("Location access denied")
-        default:
-            break
-        }
-    }
-    
-    private func startBackgroundTask() {
-        if backgroundTask == .invalid {
-            backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "LocationUpdate") {
-                // Expiration handler
-                UIApplication.shared.endBackgroundTask(self.backgroundTask)
-                self.backgroundTask = .invalid
-            }
-        }
-    }
-}
+import MapKit
+import SwiftUI
 
 struct MapView: View {
     @StateObject private var locationManager = LocationManager()
-    
-    // Default region: Kingston University
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 51.4014, longitude: -0.3046),
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-    )
-    
-    private func setInitialUserLocation(_ location: CLLocationCoordinate2D?) {
-        if !initialLocationSet, let userLocation = location {
-            region = MKCoordinateRegion(
-                center: userLocation,
-                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-            )
-            followUser = true
-            initialLocationSet = true
-        }
-    }
+    @StateObject private var controller: MapViewController
+    @State private var showingNewTripView = false
+    @State private var showingTripDetails = false
 
-    @State private var followUser = false  // Controls whether to track the user
-    @State private var initialLocationSet = false
+    init() {
+        let locationManager = LocationManager()
+        self._locationManager = StateObject(wrappedValue: locationManager)
+        self._controller = StateObject(
+            wrappedValue: MapViewController(locationManager: locationManager))
+    }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                UIKitMapView(region: $region, followUser: $followUser)
-                    .ignoresSafeArea()
-
-                VStack {
-                    Spacer()
-                    
-                    // Recenter button
-                    HStack {
-                        Spacer()
-                        
-                        Button(action: {
-                            if let userLocation = locationManager.userLocation {
-                                region = MKCoordinateRegion(
-                                    center: userLocation,
-                                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-                                )
-                                followUser = true
-                            }
-                        }) {
-                            Image(systemName: "location.fill")
-                                .padding()
-                                .background(Color.white.opacity(0.8))
-                                .clipShape(Circle())
-                                .shadow(radius: 4)
-                        }
-                        .padding(.bottom, 30)
+                // Map layer
+                Group {
+                    if let trip = controller.currentTrip, let route = trip.route {
+                        UIKitMapViewWithRoute(
+                            region: $controller.region,
+                            followUser: $controller.followUser,
+                            route: route,
+                            destination: trip.destination
+                        )
+                    } else {
+                        UIKitMapView(
+                            region: $controller.region,
+                            followUser: $controller.followUser
+                        )
                     }
-                    .padding(.trailing, 20)
+                }
+                .ignoresSafeArea()
+
+                // UI overlays
+                VStack {
+                    // Trip banner (when active)
+//                    if let trip = controller.currentTrip {
+//                        tripBanner(trip)
+//                    }
+//                    
+                    // Trip banner (when active)
+                    if let trip = controller.currentTrip {
+                        TripBanner(
+                            trip: trip,
+                            timeFormatter: controller.timeFormatter,
+                            onTap: { showingTripDetails = true }
+                        )
+                    }
+
+                    Spacer()
+
+                    // Recenter button
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: controller.centerOnUser) {
+                                Image(systemName: "location.fill")
+                                    .padding(10)
+                                    .background(Color.white.opacity(0.8))
+                                    .clipShape(Circle())
+                                    .shadow(radius: 2)
+                            }
+                            .padding(.trailing, 20)
+                        }
+
+                        Button(action: { showingNewTripView = true }) {
+                            Text("Create Trip")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .cornerRadius(12)
+                                .padding(.horizontal, 20)
+                        }
+                    }
+                    .padding(.bottom, 20)
                 }
             }
             .navigationTitle("Map")
-            .onReceive(locationManager.$userLocation) { location in
-                setInitialUserLocation(location)
-            }
             .onAppear {
-                setInitialUserLocation(locationManager.userLocation)
+                controller.setInitialLocation(locationManager.userLocation)
+            }
+            .sheet(isPresented: $showingNewTripView) {
+                NewTripView(onTripCreated: controller.createTrip)
+            }
+            .sheet(isPresented: $showingTripDetails) {
+                if let trip = controller.currentTrip {
+                    TripDetailsView(trip: trip) {
+                        controller.currentTrip = nil
+                    }
+                }
             }
         }
     }
+
+    // MARK: - UI Components
+
+    private func tripBanner(_ trip: TripDetails) -> some View {
+        Button(action: { showingTripDetails = true }) {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Trip to \(trip.destinationName)")
+                        .font(.headline)
+                    
+                    if let arrival = trip.estimatedArrivalTime {
+                        Text("Arrival: \(arrival, formatter: controller.timeFormatter)")
+                            .font(.subheadline)
+                    }
+                }
+                .padding(.leading)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.gray)
+                    .padding(.trailing)
+            }
+            .padding(.vertical, 12)
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(radius: 2)
+            .padding(.horizontal)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
 }
 
+// MARK: - Preview
 #Preview {
     MapView()
 }
