@@ -10,7 +10,7 @@
  * Represents a system user, including individuals undertaking activities and those monitoring them.
  * 
  * @typedef {Object} User
- * @property {string} UserID - Unique identifier for the user.
+ * @property {number} UserID - Unique identifier for the user.
  * @property {string} UserFirstname - First name of the user.
  * @property {string} UserLastname - Last name of the user.
  * @property {string} UserPhone - Phone number of the user.
@@ -31,7 +31,27 @@
  * @property {number} ContactUserID - ID of the user who owns the contact.
  * @property {number} ContactContactID - ID of the associated contact.
  * @property {string} ContactLabel - Relationship label (e.g., "partner", "parent").
- * @property {string} ContactDateCreated - Date when the contact was added (default: current timestamp).
+ * @property {string} ContactDateCreated - Date when the contact was added.
+ */
+
+/**
+ * Contact Detail Entity
+ * Returned by the users/contacts/{id} endpoint - combines user and contact information.
+ * 
+ * @typedef {Object} ContactDetail
+ * @property {number} UserID - ID of the contact's user.
+ * @property {string} UserFirstname - First name of the contact.
+ * @property {string} UserLastname - Last name of the contact.
+ * @property {string} UserPhone - Phone number of the contact.
+ * @property {string} UserUsername - Username of the contact.
+ * @property {string} UserPassword - Empty password field.
+ * @property {float} UserLatitude - Last latitude of the contact.
+ * @property {float} UserLongitude - Last longitude of the contact.
+ * @property {bigint} UserTimestamp - Timestamp of the contact's location.
+ * @property {string} UserImageURL - Profile image URL of the contact.
+ * @property {number} UserContactID - ID of the contact relationship record.
+ * @property {string} UserContactLabel - Relationship label (e.g., "Friend", "Partner").
+ * @property {string} UserContactDatecreated - When this contact relationship was created.
  */
 
 /**
@@ -42,12 +62,16 @@
  * @property {number} ActivityID - Unique identifier for the activity.
  * @property {string} ActivityName - Name of the activity.
  * @property {number} ActivityUserID - ID of the user associated with the activity.
+ * @property {string} ActivityUsername - Username of the associated user (extended field).
  * @property {string} ActivityDescription - Description of the activity.
  * @property {number} ActivityFromID - ID of the departure location.
+ * @property {string} ActivityFromName - Name of the departure location (extended field).
  * @property {string} ActivityLeave - Date and time of departure.
  * @property {number} ActivityToID - ID of the arrival location.
+ * @property {string} ActivityToName - Name of the arrival location (extended field).
  * @property {string} ActivityArrive - Date and time of arrival.
  * @property {number} ActivityStatusID - ID representing the status of the activity.
+ * @property {string} ActivityStatusName - Name of the activity status (extended field).
  */
 
 /**
@@ -81,7 +105,16 @@
  * @typedef {Object} Position
  * @property {number} PositionID - Unique identifier for the position record.
  * @property {number} PositionActivityID - ID of the related activity.
+ * @property {string} PositionActivityName - Name of the associated activity (extended field).
  * @property {number} PositionLatitude - Latitude coordinate of the recorded position.
  * @property {number} PositionLongitude - Longitude coordinate of the recorded position.
  * @property {number} PositionTimestamp - Timestamp of the recorded position.
+ */
+
+/**
+ * API Response Format Note
+ *
+ * When requesting a single item by ID (e.g., GET /users/1), the API returns 
+ * the result as an array containing one object, not as a single object.
+ * Cient code handles this by extracting the first item from the array.
  */

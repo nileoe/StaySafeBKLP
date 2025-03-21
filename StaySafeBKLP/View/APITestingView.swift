@@ -21,63 +21,63 @@ struct APITestingView: View {
                     sectionHeader("Activities")
 
                     Button("GET All Activities") {
-                        fetchActivities(proxy: proxy)
+                        Task { await fetchActivities(proxy: proxy) }
                     }
 
                     Button("GET Activity by ID (1)") {
-                        fetchActivity(id: "1", proxy: proxy)
+                        Task { await fetchActivity(id: "1", proxy: proxy) }
                     }
 
                     Button("GET Activities by User ID (1)") {
-                        fetchActivitiesByUser(id: "1", proxy: proxy)
+                        Task { await fetchActivitiesByUser(id: "1", proxy: proxy) }
                     }
 
                     // Locations section
                     sectionHeader("Locations")
 
                     Button("GET All Locations") {
-                        fetchLocations(proxy: proxy)
+                        Task { await fetchLocations(proxy: proxy) }
                     }
 
                     Button("GET Location by ID (1)") {
-                        fetchLocation(id: "1", proxy: proxy)
+                        Task { await fetchLocation(id: "1", proxy: proxy) }
                     }
 
                     // Positions section
                     sectionHeader("Positions")
 
                     Button("GET All Positions") {
-                        fetchPositions(proxy: proxy)
+                        Task { await fetchPositions(proxy: proxy) }
                     }
 
                     Button("GET Position by ID (1)") {
-                        fetchPosition(id: "1", proxy: proxy)
+                        Task { await fetchPosition(id: "1", proxy: proxy) }
                     }
 
                     Button("GET Positions by Activity ID (2)") {
-                        fetchPositionsByActivity(id: "2", proxy: proxy)
+                        Task { await fetchPositionsByActivity(id: "2", proxy: proxy) }
                     }
 
                     // Status section
                     sectionHeader("Status")
 
                     Button("GET All Statuses") {
-                        fetchStatuses(proxy: proxy)
+                        Task { await fetchStatuses(proxy: proxy) }
                     }
 
                     // Users section
                     sectionHeader("Users")
 
                     Button("GET All Users") {
-                        fetchUsers(proxy: proxy)
+                        Task { await fetchUsers(proxy: proxy) }
                     }
 
                     Button("GET User by ID (1)") {
-                        fetchUser(id: "1", proxy: proxy)
+                        Task { await fetchUser(id: "1", proxy: proxy) }
                     }
 
                     Button("GET Contacts by User ID (1)") {
-                        fetchContactsByUser(id: "1", proxy: proxy)
+                        Task { await fetchContactsByUser(id: "1", proxy: proxy) }
                     }
 
                     Divider()
@@ -124,36 +124,7 @@ struct APITestingView: View {
 
     // MARK: - Generic Response Handlers
 
-    /// Generic method to handle API responses
-    private func handleApiResponse<T: Encodable>(
-        result: Result<T, APIError>,
-        title: String
-    ) {
-        isLoading = false
-        switch result {
-        case .success(let data):
-            responseText = formatForDisplay(data, title: title)
-        case .failure(let error):
-            responseText = "Error: \(error.description)"
-        }
-    }
-
-    /// Generic method to make API calls and handle responses
-    private func makeApiCall<T: Encodable>(
-        title: String,
-        proxy: ScrollViewProxy,
-        apiCall: @escaping (@escaping (Result<T, APIError>) -> Void) -> Void
-    ) {
-        isLoading = true
-        responseText = "Loading..."
-        scrollToResponse(proxy: proxy)
-
-        apiCall { result in
-            self.handleApiResponse(result: result, title: title)
-        }
-    }
-
-    // Format any object for display
+    /// Format any object for display
     private func formatForDisplay<T: Encodable>(_ object: T, title: String) -> String {
         if let jsonData = try? JSONEncoder().encode(object),
             let prettyPrintedString = String(data: jsonData, encoding: .utf8)
@@ -164,115 +135,128 @@ struct APITestingView: View {
         }
     }
 
+    // Generic method to execute API calls with async/await
+    private func executeApiCall<T: Encodable>(
+        title: String,
+        proxy: ScrollViewProxy,
+        action: () async throws -> T
+    ) async {
+        isLoading = true
+        responseText = "Loading..."
+        scrollToResponse(proxy: proxy)
+
+        do {
+            let result = try await action()
+            isLoading = false
+            responseText = formatForDisplay(result, title: title)
+        } catch let error as APIError {
+            isLoading = false
+            responseText = "Error: \(error.description)"
+        } catch {
+            isLoading = false
+            responseText = "Unexpected error: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: - API Fetch Methods
 
-    private func fetchActivities(proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchActivities(proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET All Activities Response",
             proxy: proxy,
-            apiCall: apiService.getAllActivities
+            action: apiService.getAllActivities
         )
     }
 
-    private func fetchActivity(id: String, proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchActivity(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET Activity by ID \(id) Response",
             proxy: proxy,
-            apiCall: { completion in
-                self.apiService.getActivity(id: id, completion: completion)
-            }
+            action: { try await apiService.getActivity(id: id) }
         )
     }
 
-    private func fetchActivitiesByUser(id: String, proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchActivitiesByUser(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET Activities by User ID \(id) Response",
             proxy: proxy,
-            apiCall: { completion in
-                self.apiService.getActivities(userID: id, completion: completion)
-            }
+            action: { try await apiService.getActivities(userID: id) }
         )
     }
 
-    private func fetchLocations(proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchLocations(proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET All Locations Response",
             proxy: proxy,
-            apiCall: apiService.getLocations
+            action: apiService.getLocations
         )
     }
 
-    private func fetchLocation(id: String, proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchLocation(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET Location by ID \(id) Response",
             proxy: proxy,
-            apiCall: { completion in
-                self.apiService.getLocation(id: id, completion: completion)
-            }
+            action: { try await apiService.getLocation(id: id) }
         )
     }
 
-    private func fetchPositions(proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchPositions(proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET All Positions Response",
             proxy: proxy,
-            apiCall: apiService.getAllPositions
+            action: apiService.getAllPositions
         )
     }
 
-    private func fetchPosition(id: String, proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchPosition(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET Position by ID \(id) Response",
             proxy: proxy,
-            apiCall: { completion in
-                self.apiService.getPosition(id: id, completion: completion)
-            }
+            action: { try await apiService.getPosition(id: id) }
         )
     }
 
-    private func fetchPositionsByActivity(id: String, proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchPositionsByActivity(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET Positions by Activity ID \(id) Response",
             proxy: proxy,
-            apiCall: { completion in
-                self.apiService.getPositions(activityID: id, completion: completion)
-            }
+            action: { try await apiService.getPositions(activityID: id) }
         )
     }
 
-    private func fetchStatuses(proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchStatuses(proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET All Statuses Response",
             proxy: proxy,
-            apiCall: apiService.getStatuses
+            action: apiService.getStatuses
         )
     }
 
-    private func fetchUsers(proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchUsers(proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET All Users Response",
             proxy: proxy,
-            apiCall: apiService.getUsers
+            action: apiService.getUsers
         )
     }
 
-    private func fetchUser(id: String, proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchUser(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET User by ID \(id) Response",
             proxy: proxy,
-            apiCall: { completion in
-                self.apiService.getUser(id: id, completion: completion)
-            }
+            action: { try await apiService.getUser(id: id) }
         )
     }
 
-    private func fetchContactsByUser(id: String, proxy: ScrollViewProxy) {
-        makeApiCall(
+    private func fetchContactsByUser(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
             title: "GET Contacts by User ID \(id) Response",
             proxy: proxy,
-            apiCall: { completion in
-                self.apiService.getContacts(userID: id, completion: completion)
-            }
+            action: { try await apiService.getContacts(userID: id) }
         )
     }
+}
+
+#Preview {
+    APITestingView()
 }
