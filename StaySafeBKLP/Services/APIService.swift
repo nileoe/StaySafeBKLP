@@ -46,10 +46,9 @@ class APIService {
     }
 
     /// Generic GET request with typed response
-    func get<T: Codable>(endpoint: String, completion: @escaping (Result<T, APIError>) -> Void) {
+    func get<T: Codable>(endpoint: String) async throws -> T {
         guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
-            completion(.failure(.invalidURL))
-            return
+            throw APIError.invalidURL
         }
 
         var request = URLRequest(url: url)
@@ -60,16 +59,13 @@ class APIService {
             print("Making GET request to: \(url)")
         }
 
-        performRequest(request: request, completion: completion)
+        return try await performRequest(request: request)
     }
 
     /// Generic POST request
-    func post<T: Codable, U: Codable>(
-        endpoint: String, body: T, completion: @escaping (Result<U, APIError>) -> Void
-    ) {
+    func post<T: Codable, U: Codable>(endpoint: String, body: T) async throws -> U {
         guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
-            completion(.failure(.invalidURL))
-            return
+            throw APIError.invalidURL
         }
 
         var request = URLRequest(url: url)
@@ -79,19 +75,16 @@ class APIService {
         do {
             let jsonData = try JSONEncoder().encode(body)
             request.httpBody = jsonData
-            performRequest(request: request, completion: completion)
+            return try await performRequest(request: request)
         } catch {
-            completion(.failure(.requestFailed(error)))
+            throw APIError.requestFailed(error)
         }
     }
 
     /// Generic PUT request
-    func put<T: Codable, U: Codable>(
-        endpoint: String, body: T, completion: @escaping (Result<U, APIError>) -> Void
-    ) {
+    func put<T: Codable, U: Codable>(endpoint: String, body: T) async throws -> U {
         guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
-            completion(.failure(.invalidURL))
-            return
+            throw APIError.invalidURL
         }
 
         var request = URLRequest(url: url)
@@ -101,89 +94,77 @@ class APIService {
         do {
             let jsonData = try JSONEncoder().encode(body)
             request.httpBody = jsonData
-            performRequest(request: request, completion: completion)
+            return try await performRequest(request: request)
         } catch {
-            completion(.failure(.requestFailed(error)))
+            throw APIError.requestFailed(error)
         }
     }
 
     /// Generic DELETE request
-    func delete<T: Codable>(endpoint: String, completion: @escaping (Result<T, APIError>) -> Void) {
+    func delete<T: Codable>(endpoint: String) async throws -> T {
         guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
-            completion(.failure(.invalidURL))
-            return
+            throw APIError.invalidURL
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        performRequest(request: request, completion: completion)
+        return try await performRequest(request: request)
     }
 
     /// Helper method to perform requests
-    private func performRequest<T: Codable>(
-        request: URLRequest,
-        completion: @escaping (Result<T, APIError>) -> Void
-    ) {
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                // Error handling first
-                if let error = error {
-                    debugPrint("Network error: \(error)")
-                    completion(.failure(.requestFailed(error)))
-                    return
-                }
+    private func performRequest<T: Codable>(request: URLRequest) async throws -> T {
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
 
-                guard let httpResponse = response as? HTTPURLResponse,
-                    (200...299).contains(httpResponse.statusCode),
-                    let data = data
-                else {
-                    let statusCode = (response as? HTTPURLResponse)?.statusCode
-                    debugPrint("HTTP error: \(statusCode ?? -1)")
-                    completion(
-                        statusCode != nil
-                            ? .failure(.serverError(statusCode!)) : .failure(.invalidResponse))
-                    return
-                }
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
 
-                // Debug logging (kept compact)
-                if self.debugMode, let jsonString = String(data: data, encoding: .utf8) {
-                    print("Response from \(request.url?.lastPathComponent ?? "unknown"):")
-                    print(jsonString)
+            if !(200...299).contains(httpResponse.statusCode) {
+                throw APIError.serverError(httpResponse.statusCode)
+            }
 
-                    // Simplified array vs object logging
-                    if let jsonObject = try? JSONSerialization.jsonObject(with: data) {
-                        let isArrayResponse = jsonObject is [Any]
-                        let isArrayExpected = T.self is [Any].Type
+            // Debug logging (kept compact)
+            if self.debugMode, let jsonString = String(data: data, encoding: .utf8) {
+                print("Response from \(request.url?.lastPathComponent ?? "unknown"):")
+                print(jsonString)
 
-                        if isArrayResponse && !isArrayExpected {
-                            print(
-                                "Note: API returned array for single object request (handled by wrapper)"
-                            )
-                        } else if !isArrayResponse && isArrayExpected {
-                            print("Warning: Expected array but got object")
-                        }
+                // Simplified array vs object logging
+                if let jsonObject = try? JSONSerialization.jsonObject(with: data) {
+                    let isArrayResponse = jsonObject is [Any]
+                    let isArrayExpected = T.self is [Any].Type
+
+                    if isArrayResponse && !isArrayExpected {
+                        print(
+                            "Note: API returned array for single object request (handled by wrapper)"
+                        )
+                    } else if !isArrayResponse && isArrayExpected {
+                        print("Warning: Expected array but got object")
                     }
                 }
-
-                // Decoding attempt
-                do {
-                    completion(.success(try JSONDecoder().decode(T.self, from: data)))
-                } catch {
-                    debugPrint("Decoding error: \(error)")
-                    self.logDecodingError(data: data, type: T.self, error: error)
-                    completion(.failure(.decodingError(error)))
-                }
             }
-        }.resume()
+
+            do {
+                return try JSONDecoder().decode(T.self, from: data)
+            } catch {
+                debugPrint("Decoding error: \(error)")
+                self.logDecodingError(data: data, type: T.self, error: error)
+                throw APIError.decodingError(error)
+            }
+        } catch let error as APIError {
+            throw error
+        } catch {
+            debugPrint("Network error: \(error)")
+            throw APIError.requestFailed(error)
+        }
     }
 
     // Method only used for API testing, not needed for actual app features
-    func getRawData(endpoint: String, completion: @escaping (Result<Any, APIError>) -> Void) {
+    func getRawData(endpoint: String) async throws -> Any {
         guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
-            completion(.failure(.invalidURL))
-            return
+            throw APIError.invalidURL
         }
 
         var request = URLRequest(url: url)
@@ -194,37 +175,16 @@ class APIService {
             print("Making raw GET request to: \(url)")
         }
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                // Error handling code...
-                if let error = error {
-                    completion(.failure(.requestFailed(error)))
-                    return
-                }
+        let (data, response) = try await URLSession.shared.data(for: request)
 
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    completion(.failure(.invalidResponse))
-                    return
-                }
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
 
-                if !(200...299).contains(httpResponse.statusCode) {
-                    completion(.failure(.serverError(httpResponse.statusCode)))
-                    return
-                }
+        if !(200...299).contains(httpResponse.statusCode) {
+            throw APIError.serverError(httpResponse.statusCode)
+        }
 
-                guard let data = data else {
-                    completion(.failure(.invalidResponse))
-                    return
-                }
-
-                // Process the data
-                do {
-                    let json = try JSONSerialization.jsonObject(with: data)
-                    completion(.success(json))
-                } catch {
-                    completion(.failure(.decodingError(error)))
-                }
-            }
-        }.resume()
+        return try JSONSerialization.jsonObject(with: data)
     }
 }
