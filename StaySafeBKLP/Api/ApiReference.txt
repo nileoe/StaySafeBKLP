@@ -1,0 +1,87 @@
+/**
+ * StaySafe API Reference
+ * 
+ * The StaySafe API provides CRUD operations for key entities: User, Contact, Activity, Status, Location, and Position.
+ * This API follows RESTful principles, allowing data persistence and retrieval through GET, POST, PUT, and DELETE requests.
+ */
+
+/**
+ * User Entity
+ * Represents a system user, including individuals undertaking activities and those monitoring them.
+ * 
+ * @typedef {Object} User
+ * @property {string} UserID - Unique identifier for the user.
+ * @property {string} UserFirstname - First name of the user.
+ * @property {string} UserLastname - Last name of the user.
+ * @property {string} UserPhone - Phone number of the user.
+ * @property {string} UserUsername - Username for the user.
+ * @property {string} UserPassword - Encrypted password for authentication.
+ * @property {float} UserLatitude - Last known latitude of the user.
+ * @property {float} UserLongitude - Last known longitude of the user.
+ * @property {bigint} UserTimestamp - Timestamp of the last known location update.
+ * @property {string} UserImageURL - URL of the user's profile image.
+ */
+
+/**
+ * Contact Entity
+ * Defines relationships between users and their contacts.
+ * 
+ * @typedef {Object} Contact
+ * @property {number} ContactID - Unique identifier for the contact record.
+ * @property {number} ContactUserID - ID of the user who owns the contact.
+ * @property {number} ContactContactID - ID of the associated contact.
+ * @property {string} ContactLabel - Relationship label (e.g., "partner", "parent").
+ * @property {string} ContactDateCreated - Date when the contact was added (default: current timestamp).
+ */
+
+/**
+ * Activity Entity
+ * Represents a planned journey between locations at a specified time.
+ * 
+ * @typedef {Object} Activity
+ * @property {number} ActivityID - Unique identifier for the activity.
+ * @property {string} ActivityName - Name of the activity.
+ * @property {number} ActivityUserID - ID of the user associated with the activity.
+ * @property {string} ActivityDescription - Description of the activity.
+ * @property {number} ActivityFromID - ID of the departure location.
+ * @property {string} ActivityLeave - Date and time of departure.
+ * @property {number} ActivityToID - ID of the arrival location.
+ * @property {string} ActivityArrive - Date and time of arrival.
+ * @property {number} ActivityStatusID - ID representing the status of the activity.
+ */
+
+/**
+ * Location Entity
+ * Represents a specific place for journeys.
+ * 
+ * @typedef {Object} Location
+ * @property {number} LocationID - Unique identifier for the location.
+ * @property {string} LocationName - Name of the location.
+ * @property {string} LocationDescription - Description of the location.
+ * @property {string} LocationAddress - Address of the location.
+ * @property {string|null} LocationPostcode - Postal code of the location (nullable).
+ * @property {number} LocationLatitude - Latitude coordinate of the location.
+ * @property {number} LocationLongitude - Longitude coordinate of the location.
+ */
+
+/**
+ * Status Entity
+ * Represents an enumerated set of activity statuses.
+ * 
+ * @typedef {Object} Status
+ * @property {number} StatusID - Unique identifier for the status.
+ * @property {string} StatusName - Name of the status (e.g., "Planned", "Started").
+ * @property {number} StatusOrder - Order of the status for sorting.
+ */
+
+/**
+ * Position Entity
+ * Records GPS coordinates and timestamps associated with an activity.
+ * 
+ * @typedef {Object} Position
+ * @property {number} PositionID - Unique identifier for the position record.
+ * @property {number} PositionActivityID - ID of the related activity.
+ * @property {number} PositionLatitude - Latitude coordinate of the recorded position.
+ * @property {number} PositionLongitude - Longitude coordinate of the recorded position.
+ * @property {number} PositionTimestamp - Timestamp of the recorded position.
+ */
