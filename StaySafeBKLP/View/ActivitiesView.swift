@@ -40,11 +40,16 @@ struct ActivityCard: View {
     
     private var arrivalTimeString: String {
         let arrivalTime = activity.activityArrive
-        if arrivalTime != "" {
-            return "Arrival: \(activity.activityToName) at \(activity.activityArrive)"
-        }  else {
+        guard arrivalTime != "" else {
             return "No arrival time recorded"
-       }
+        }
+        guard let arrivalLocation = activity.activityToName else {
+            return "No arrival location recorded"
+        }
+        guard let arrivalTimeString = formattedDate(arrivalTime) else {
+            return "Invalid arrival date string"
+        }
+        return "Arrival: \(arrivalLocation) at \(arrivalTimeString)"
     }
 //    private var departureTimeString: String {
 //        if let departureTime = trip.departureTime {
@@ -55,8 +60,13 @@ struct ActivityCard: View {
 //    }
     
     private var departureTimeString: String {
-//        return "Departure: \(activity.activityFromName) at \(formattedDate(activity.activityLeave))"
-        return "Departure: \(activity.activityFromName) at \(activity.activityLeave)"
+        guard let departureLocation = activity.activityFromName else {
+            return "No departure location available"
+        }
+        guard let departureTimeString = formattedDate(activity.activityLeave) else {
+            return "Invalid departure date string"
+        }
+        return "Departure: \(departureLocation) at \(departureTimeString)"
     }
     
     private var departureIconName: String {
@@ -125,12 +135,13 @@ struct ActivityCard: View {
 //        .padding(.horizontal)
     }
     
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
+//    private func formattedDate(_ date: Date) -> String {
+//        let formatter = DateFormatter()
+//        formatter.dateStyle = .short
+//        formatter.timeStyle = .short
+//        return formatter.string(from: date)
+//    }
+
     
     private func statusColor(for status: String) -> Color {
         switch status.lowercased() {
