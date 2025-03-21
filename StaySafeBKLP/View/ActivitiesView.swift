@@ -1,13 +1,14 @@
 import SwiftUI
 
-struct TripsView: View {
-    @State private var trips: [Trip] = []
+struct ActivitiesView: View {
+    private let apiService = StaySafeAPIService()
+    @State private var activities: [Activity] = []
     var body: some View {
         NavigationView {
             List {
                 ForEach(
-                    trips, id: \.id) { trip in
-                        TripCard(trip: trip)
+                    activities, id: \.id) { activity in
+                        ActivityCard(activity: activity)
                             .padding(.vertical, 2)
                     }
                     .navigationTitle("My Trips")
@@ -15,59 +16,74 @@ struct TripsView: View {
         }
         .task {
             do {
-                trips = try await getAllTrips()
-            } catch TripError.invalidData {
-                print("Fetching trips: invalid data")
-            } catch TripError.invalidURL {
-                print("Fetching trips: invalid url")
-            } catch TripError.invalidResponse {
-                print("Fetching trips: invalid response")
+                activities = try await apiService.getAllActivities()
+//            } catch TripError.invalidData {
+//                print("Fetching trips: invalid data")
+//            } catch TripError.invalidURL {
+//                print("Fetching trips: invalid url")
+//            } catch TripError.invalidResponse {
+//                print("Fetching trips: invalid response")
             } catch {
-                print("unexpected error")
+                print("unexpected error when fetching activities")
+            }
+            for activity in activities {
+                print(activity)
+                print()
+                print()
             }
         }
     }
 }
 
-struct TripCard: View {
-    var trip: Trip
+struct ActivityCard: View {
+    var activity: Activity
     
     private var arrivalTimeString: String {
-        if let arrivalTime = trip.arrivalTime {
-            return "Arrival: \(trip.arrivalLocationName) at \(formattedDate(arrivalTime))"
-        } else {
+        let arrivalTime = activity.activityArrive
+        if arrivalTime != "" {
+            return "Arrival: \(activity.activityToName) at \(activity.activityArrive)"
+        }  else {
             return "No arrival time recorded"
        }
     }
+//    private var departureTimeString: String {
+//        if let departureTime = trip.departureTime {
+//            return "Departure: \(trip.departureLocationName) at \(formattedDate(departureTime))"
+//        } else {
+//            return "No departure time recorded"
+//       }
+//    }
+    
     private var departureTimeString: String {
-        if let departureTime = trip.departureTime {
-            return "Departure: \(trip.departureLocationName) at \(formattedDate(departureTime))"
-        } else {
-            return "No departure time recorded"
-       }
+//        return "Departure: \(activity.activityFromName) at \(formattedDate(activity.activityLeave))"
+        return "Departure: \(activity.activityFromName) at \(activity.activityLeave)"
     }
     
     private var departureIconName: String {
-         return trip.departureTime != nil ? "arrow.up.circle.fill" : "questionmark.circle.fill"
+         return "arrow.up.circle.fill"
      }
+//    private var departureIconName: String {
+//         return trip.departureTime != nil ? "arrow.up.circle.fill" : "questionmark.circle.fill"
+//     }
      private var arrivalIconName: String {
-         return trip.arrivalTime != nil ? "arrow.down.circle.fill" : "questionmark.circle.fill"
+         return activity.activityArrive != "" ? "arrow.down.circle.fill" : "questionmark.circle.fill"
      }
     
     private var arrivalIconColor: Color {
-        return trip.arrivalTime != nil ? .blue: .orange
+        return activity.activityArrive != "" ? .blue: .orange
     }
     private var departureIconColor: Color {
-        return trip.departureTime != nil ? .green  : .orange
+        // TODO remove: assuming emtpy string = no arrival time
+        return activity.activityLeave != "" ? .green  : .orange
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(trip.title)
+            Text(activity.activityName)
                 .font(.headline)
                 .foregroundColor(.primary)
             
-            Text(trip.description)
+            Text(activity.activityDescription)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .lineLimit(2)
@@ -94,8 +110,10 @@ struct TripCard: View {
             
             HStack {
                 Image(systemName: "circle.fill")
-                    .foregroundColor(statusColor(for: trip.statusName))
-                Text(trip.statusName)
+                    .foregroundColor(
+                        statusColor(for: activity.activityStatusName ?? "no status")
+                    )
+                Text(activity.activityStatusName ?? "no status")
                     .font(.caption)
                     .foregroundColor(.primary)
             }
@@ -129,5 +147,5 @@ struct TripCard: View {
 }
 
 #Preview {
-    TripsView()
+    ActivitiesView()
 }
