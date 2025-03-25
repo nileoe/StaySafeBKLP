@@ -11,7 +11,7 @@ struct Location: Codable, Identifiable {
     /// Address of the location
     var locationAddress: String
     /// Postal code of the location
-    var locationPostcode: String?
+    var locationPostcode: String
     /// Latitude coordinate of the location
     var locationLatitude: Double
     /// Longitude coordinate of the location

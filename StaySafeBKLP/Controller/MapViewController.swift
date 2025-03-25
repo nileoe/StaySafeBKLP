@@ -3,22 +3,18 @@ import MapKit
 import SwiftUI
 
 class MapViewController: ObservableObject {
-    @Published var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 51.4014, longitude: -0.3046),
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+    @Published var region = MapRegionUtility.region(
+        center: CLLocationCoordinate2D(latitude: 51.4014, longitude: -0.3046)
     )
     @Published var followUser = false
     @Published var initialLocationSet = false
-    @Published var currentTrip: TripDetails?
+    @Published var currentActivity: Activity?
+    @Published var currentRoute: MKRoute?
+    @Published var destinationCoordinate: CLLocationCoordinate2D?
+    let apiService = StaySafeAPIService()
 
     private let locationManager: LocationManager
     private var cancellables = Set<AnyCancellable>()
-
-    let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter
-    }()
 
     init(locationManager: LocationManager) {
         self.locationManager = locationManager
@@ -33,10 +29,7 @@ class MapViewController: ObservableObject {
 
     func setInitialLocation(_ location: CLLocationCoordinate2D?) {
         if !initialLocationSet, let userLocation = location {
-            region = MKCoordinateRegion(
-                center: userLocation,
-                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-            )
+            region = MapRegionUtility.userRegion(userLocation: userLocation)
             followUser = true
             initialLocationSet = true
         }
@@ -44,48 +37,80 @@ class MapViewController: ObservableObject {
 
     func centerOnUser() {
         if let userLocation = locationManager.userLocation {
-            region = MKCoordinateRegion(
-                center: userLocation,
-                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-            )
+            region = MapRegionUtility.userRegion(userLocation: userLocation)
             followUser = true
         }
     }
 
-    func createTrip(
-        destination: CLLocationCoordinate2D, destinationName: String,
-        transportType: MKDirectionsTransportType, departureTime: Date,
-        estimatedArrival: Date?
-    ) {
+    func handleActivityCreated(_ activity: Activity) {
         guard let userLocation = locationManager.userLocation else { return }
 
-        let newTrip = TripDetails(
-            destination: destination,
-            destinationName: destinationName,
-            transportType: transportType,
-            departureTime: departureTime,
-            estimatedArrivalTime: estimatedArrival,
-            route: nil
-        )
+        // Store the created activity on the main thread
+        DispatchQueue.main.async {
+            self.currentActivity = activity
+        }
 
-        // Calculate route for display
-        let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: userLocation))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destination))
-        request.transportType = transportType
+        // Fetch destination location coordinates from the API
+        Task { @MainActor in
+            do {
+                // Get the destination location details using the activityToID from the activity
+                let location = try await apiService.getLocation(id: String(activity.activityToID))
 
-        MKDirections(request: request).calculate { [weak self] response, error in
-            guard let self = self, let route = response?.routes.first else {
-                print("Error calculating route: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
+                let destinationCoordinates = CLLocationCoordinate2D(
+                    latitude: location.locationLatitude,
+                    longitude: location.locationLongitude
+                )
 
-            DispatchQueue.main.async {
-                var updatedTrip = newTrip
-                updatedTrip.route = route
-                self.currentTrip = updatedTrip
-                self.region = MKCoordinateRegion(route.polyline.boundingMapRect)
+                // Since we're using @MainActor, these UI updates are automatically on the main thread
+                self.destinationCoordinate = destinationCoordinates
+
+                self.createRouteToDestination(
+                    from: userLocation,
+                    to: destinationCoordinates,
+                    activity: activity
+                )
+            } catch {
+
             }
         }
+    }
+
+    private func createRouteToDestination(
+        from source: CLLocationCoordinate2D,
+        to destination: CLLocationCoordinate2D,
+        activity: Activity
+    ) {
+
+        let transportType = RouteService.getTransportTypeFromDescription(
+            activity.activityDescription)
+
+        RouteService.calculateRoute(
+            from: source,
+            to: destination,
+            transportType: transportType
+        ) { [weak self] result in
+            guard let self = self else { return }
+
+            switch result {
+            case .success(let route):
+                DispatchQueue.main.async {
+                    // Store the route separately
+                    self.currentRoute = route
+                    self.destinationCoordinate = destination
+
+                    // Set the map region to show the route
+                    self.region = MapRegionUtility.regionForRoute(route) ?? self.region
+                }
+
+            case .failure(let error):
+                print("Error calculating route: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func clearCurrentTrip() {
+        currentActivity = nil
+        currentRoute = nil
+        destinationCoordinate = nil
     }
 }
