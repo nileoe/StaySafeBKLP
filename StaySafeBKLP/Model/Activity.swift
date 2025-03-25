@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a planned journey between locations at a specified time.
-struct Activity: Codable, Identifiable {
+struct Activity: Codable, Identifiable, Equatable {
     /// Unique identifier for the activity
     var activityID: Int
     /// Name of the activity
@@ -46,5 +46,9 @@ struct Activity: Codable, Identifiable {
         case activityArrive = "ActivityArrive"
         case activityStatusID = "ActivityStatusID"
         case activityStatusName = "ActivityStatusName"
+    }
+
+    static func == (lhs: Activity, rhs: Activity) -> Bool {
+        return lhs.activityID == rhs.activityID
     }
 }

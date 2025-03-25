@@ -1,3 +1,4 @@
+import Combine
 import CoreLocation
 import MapKit
 import SwiftUI
@@ -7,16 +8,14 @@ struct NewTripView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var controller: NewTripViewController
     @State private var followUser = false
+    @State private var activityCreatedCancellable: AnyCancellable?
+    @State private var showingConfirmation = false
+    @State private var confirmationMessage = ""
 
-    var onTripCreated:
-        ((CLLocationCoordinate2D, String, MKDirectionsTransportType, Date, Date?) -> Void)?
+    var onActivityCreated: ((Activity) -> Void)?
 
-    init(
-        onTripCreated: (
-            (CLLocationCoordinate2D, String, MKDirectionsTransportType, Date, Date?) -> Void
-        )? = nil
-    ) {
-        self.onTripCreated = onTripCreated
+    init(onActivityCreated: ((Activity) -> Void)? = nil) {
+        self.onActivityCreated = onActivityCreated
         let locationManager = LocationManager()
         self._locationManager = StateObject(wrappedValue: locationManager)
         self._controller = StateObject(
@@ -68,7 +67,7 @@ struct NewTripView: View {
                         // Time selection
                         DepartureSection(
                             departureDate: $controller.departureDate,
-                            onChange: controller.calculateEstimatedArrival
+                            onChange: controller.onDepartureDateChanged
                         )
 
                         // Estimated arrival
@@ -79,6 +78,35 @@ struct NewTripView: View {
                                 arrivalTime: controller.estimatedArrivalTime
                             )
                         }
+
+                        // API status messages
+                        if controller.isCreatingActivity {
+                            Divider()
+                            HStack {
+                                ProgressView()
+                                    .padding(.trailing, 8)
+                                Text("Creating trip...")
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if let error = controller.creationError {
+                            Divider()
+                            VStack(alignment: .leading) {
+                                Text("Error creating trip:")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.red)
+
+                                if let apiError = error as? APIError {
+                                    Text(apiError.description)
+                                        .foregroundColor(.red)
+                                        .font(.footnote)
+                                } else {
+                                    Text(error.localizedDescription)
+                                        .foregroundColor(.red)
+                                        .font(.footnote)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                     .padding()
                     .background(
@@ -88,17 +116,19 @@ struct NewTripView: View {
                     )
 
                     Button(action: createTrip) {
-                        Text("Create Trip")
+                        let statusEnum =
+                            ActivityStatus(rawValue: controller.activityStatusID) ?? .planned
+                        Text(statusEnum.buttonText)
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(
-                                controller.selectedLocation != nil ? Color.blue : Color.gray
-                            )
+                            .background(buttonBackground)
                             .cornerRadius(12)
                     }
-                    .disabled(controller.selectedLocation == nil)
+                    .disabled(
+                        controller.selectedLocation == nil || controller.isCreatingActivity
+                            || !controller.isDepartureValid)
                 }
                 .padding()
             }
@@ -111,18 +141,35 @@ struct NewTripView: View {
                     }
                 }
             }
-            .onReceive(locationManager.$userLocation) { location in
-                if controller.selectedLocation == nil, let userLocation = location {
-                    controller.region = MKCoordinateRegion(
-                        center: userLocation,
-                        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-                    )
-                }
-            }
             .onAppear {
                 if controller.selectedLocation != nil {
                     controller.calculateEstimatedArrival()
                 }
+
+                // Only navigate to map for "Started" trips (status ID = 2)
+                activityCreatedCancellable = controller.$createdActivity
+                    .compactMap { $0 }
+                    .sink { activity in
+                        if activity.activityStatusID == 2 {
+                            // For "Started" trips, go directly to map
+                            onActivityCreated?(activity)
+                            dismiss()
+                        } else {
+                            // For "Planned" trips, show confirmation and reset or dismiss
+                            let formattedDate = DateFormattingUtility.formatISOString(
+                                activity.activityLeave, style: DateFormattingUtility.mediumDateTime)
+                            confirmationMessage = "Trip planned for \(formattedDate)"
+                            showingConfirmation = true
+
+                            // Reset form after a short delay or dismiss based on your preference
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                dismiss()
+                            }
+                        }
+                    }
+            }
+            .onDisappear {
+                activityCreatedCancellable?.cancel()
             }
             .onChange(of: controller.selectedLocation?.latitude) { _, _ in
                 controller.calculateEstimatedArrival()
@@ -130,21 +177,33 @@ struct NewTripView: View {
             .onChange(of: controller.selectedLocation?.longitude) { _, _ in
                 controller.calculateEstimatedArrival()
             }
+            .alert("Trip Planned", isPresented: $showingConfirmation) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text(confirmationMessage)
+            }
+        }
+    }
+
+    // Helper computed property for button color
+    private var buttonBackground: Color {
+        if controller.selectedLocation == nil || !controller.isDepartureValid
+            || controller.isCreatingActivity
+        {
+            return Color.gray
+        } else {
+            let status = ActivityStatus(rawValue: controller.activityStatusID) ?? .planned
+            return status.color
         }
     }
 
     // MARK: - Actions
 
     private func createTrip() {
-        if let selectedLocation = controller.selectedLocation {
-            onTripCreated?(
-                selectedLocation,
-                controller.destinationName,
-                controller.transportType.mapKitType,
-                controller.departureDate,
-                controller.estimatedArrivalTime
-            )
-            dismiss()
+        Task {
+            await controller.createActivity()
         }
     }
 }

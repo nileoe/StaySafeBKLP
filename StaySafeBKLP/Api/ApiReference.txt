@@ -98,6 +98,19 @@
  * @property {number} StatusOrder - Order of the status for sorting.
  */
 
+
+/**
+ * Status Entity
+ * Represents an enumerated set of activity statuses.
+ * 
+ * Planned	    1
+ * Started	    2
+ * Paused	    3
+ * Cancelled   	4
+ * Completed    5
+ */
+
+
 /**
  * Position Entity
  * Records GPS coordinates and timestamps associated with an activity.

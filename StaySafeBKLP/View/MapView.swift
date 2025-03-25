@@ -20,12 +20,14 @@ struct MapView: View {
             ZStack {
                 // Map layer
                 Group {
-                    if let trip = controller.currentTrip, let route = trip.route {
+                    if let route = controller.currentRoute,
+                        let destination = controller.destinationCoordinate
+                    {
                         UIKitMapViewWithRoute(
                             region: $controller.region,
                             followUser: $controller.followUser,
                             route: route,
-                            destination: trip.destination
+                            destination: destination
                         )
                     } else {
                         UIKitMapView(
@@ -39,15 +41,9 @@ struct MapView: View {
                 // UI overlays
                 VStack {
                     // Trip banner (when active)
-//                    if let trip = controller.currentTrip {
-//                        tripBanner(trip)
-//                    }
-//                    
-                    // Trip banner (when active)
-                    if let trip = controller.currentTrip {
+                    if let activity = controller.currentActivity {
                         TripBanner(
-                            trip: trip,
-                            timeFormatter: controller.timeFormatter,
+                            activity: activity,
                             onTap: { showingTripDetails = true }
                         )
                     }
@@ -87,47 +83,22 @@ struct MapView: View {
                 controller.setInitialLocation(locationManager.userLocation)
             }
             .sheet(isPresented: $showingNewTripView) {
-                NewTripView(onTripCreated: controller.createTrip)
+                NewTripView(onActivityCreated: { activity in
+                    if activity.activityStatusID == 2 {
+                        controller.handleActivityCreated(activity)
+                    }
+                })
             }
             .sheet(isPresented: $showingTripDetails) {
-                if let trip = controller.currentTrip {
-                    TripDetailsView(trip: trip) {
-                        controller.currentTrip = nil
-                    }
+                if let activity = controller.currentActivity {
+                    TripDetailsView(
+                        activity: activity,
+                        onEndTrip: {
+                            controller.clearCurrentTrip()
+                        })
                 }
             }
         }
-    }
-
-    // MARK: - UI Components
-
-    private func tripBanner(_ trip: TripDetails) -> some View {
-        Button(action: { showingTripDetails = true }) {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text("Trip to \(trip.destinationName)")
-                        .font(.headline)
-                    
-                    if let arrival = trip.estimatedArrivalTime {
-                        Text("Arrival: \(arrival, formatter: controller.timeFormatter)")
-                            .font(.subheadline)
-                    }
-                }
-                .padding(.leading)
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.gray)
-                    .padding(.trailing)
-            }
-            .padding(.vertical, 12)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(radius: 2)
-            .padding(.horizontal)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
