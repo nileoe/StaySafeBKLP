@@ -15,12 +15,7 @@ struct ActivitiesView: View {
                 ForEach(
                     activities, id: \.id) { activity in
                         NavigationLink(
-                            destination: ActivityView(
-                                activity: activity,
-                                handleConfirm: nil,
-                                handleCancel: nil,
-                                confirmButtonText: "confirm"
-                            ),
+                            destination: ActivityView(activity: activity),
                             label: {
                                 ActivityCard(activity: activity)
                             }

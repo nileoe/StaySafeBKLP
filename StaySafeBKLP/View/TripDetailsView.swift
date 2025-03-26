@@ -89,22 +89,33 @@ struct TripDetailsView: View {
         }
     }
 }
+
 struct SectionRow: View {
-    let imageName: String
+    let imageName: String?
     let imageColor: Color
     let rowText: String
-    
-    init(imageName: String, imageColor: Color = .black, rowText: String) {
-            self.imageName = imageName
-            self.imageColor = imageColor
-            self.rowText = rowText
-        }
+    let isItalic: Bool
+
+    init(
+        imageName: String? = nil,
+        imageColor: Color = .black,
+        rowText: String,
+        isItalic: Bool = false
+    ) {
+        self.imageName = imageName
+        self.imageColor = imageColor
+        self.rowText = rowText
+        self.isItalic = isItalic
+    }
     
     var body: some View {
         HStack {
-            Image(systemName: imageName)
+            if let imageName {
+                Image(systemName: imageName)
                 .foregroundColor(imageColor)
+            }
             Text(rowText)
+                .italic(isItalic)
         }
     }
 }
