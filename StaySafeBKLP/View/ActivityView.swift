@@ -33,7 +33,6 @@ struct ActivityView: View {
                     .background(Color(.systemBackground))
                     .cornerRadius(12)
                     .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-//                    .padding(.horizontal)
                     
                     // Timeline Card
                     VStack(alignment: .leading, spacing: 12) {
@@ -132,13 +131,6 @@ struct ActivityView: View {
             activityStatusID: 3,
             activityStatusName: "Planned"
         ))
-//        handleConfirm: {
-//            print("Confirm button pressed!")
-//        },
-//        handleCancel: {
-//            print("Cancel button pressed!")
-//        },
-//        confirmButtonText: "confi"
    )
 }
 

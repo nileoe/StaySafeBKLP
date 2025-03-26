@@ -38,5 +38,9 @@ struct Activity: Codable, Identifiable, Equatable {
     static func == (lhs: Activity, rhs: Activity) -> Bool {
         return lhs.activityID == rhs.activityID
     }
+    
+    func isCurrent() -> Bool {
+        activityStatusID >= 1 && activityStatusID <= 3
+    }
 }
 

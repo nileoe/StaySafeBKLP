@@ -2,30 +2,44 @@ import SwiftUI
 
 struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
+    
     @State private var activities: [Activity] = []
+    @State private var showCurrentActivitiesOnly: Bool = true
+
+    private var filteredActivities: [Activity] {
+        return showCurrentActivitiesOnly ? activities.filter({$0.isCurrent()}) : activities
+    }
+    
 //    private let loggedInUser: User // TODO will be passed or accessed through environment var.?
     var body: some View {
         NavigationView {
-            List {
-                ForEach(
-                    activities, id: \.id) { activity in
-                        NavigationLink(
-                            destination: ActivityView(activity: activity),
-                            label: {
-                                ActivityCard(activity: activity)
-                            }
-                        )
-                    }
-            }
-            .task {
-                do {
-                    activities = try await apiService.getActivities(userID: "1") // TODO placeholder user ID
-//                    activities = try await apiService.getActivities(loggedInUser.userID)
-                } catch {
-                    print("Unexpected error when fetching activities")
+            VStack {
+                Toggle(isOn: $showCurrentActivitiesOnly) {
+                    Text("Show current trips only")
                 }
+                .padding(.horizontal)
+                .padding(.top)
+                List {
+                    ForEach(
+                        filteredActivities, id: \.id) { activity in
+                            NavigationLink(
+                                destination: ActivityView(activity: activity),
+                                label: {
+                                    ActivityCard(activity: activity)
+                                }
+                            )
+                        }
+                }
+                .task {
+                    do {
+                        activities = try await apiService.getActivities(userID: "1") // TODO placeholder user ID
+                        //                    activities = try await apiService.getActivities(loggedInUser.userID)
+                    } catch {
+                        print("Unexpected error when fetching activities")
+                    }
+                }
+                .navigationTitle("My Trips")
             }
-        .navigationTitle("My Trips")
         }
     }
 }

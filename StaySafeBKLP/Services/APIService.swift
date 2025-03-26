@@ -130,10 +130,10 @@ class APIService {
             }
 
             // Debug logging
-            if self.debugMode, let jsonString = String(data: data, encoding: .utf8) {
-                print("Response from \(request.url?.lastPathComponent ?? "unknown"):")
-                print(jsonString)
-            }
+//            if self.debugMode, let jsonString = String(data: data, encoding: .utf8) {
+//                print("Response from \(request.url?.lastPathComponent ?? "unknown"):")
+//                print(jsonString)
+//            }
 
             // Try to determine if response is array or object
             guard let jsonObject = try? JSONSerialization.jsonObject(with: data) else {
