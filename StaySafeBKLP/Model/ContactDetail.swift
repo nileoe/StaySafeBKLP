@@ -27,8 +27,19 @@ struct ContactDetail: Codable, Identifiable {
         "\(userFirstname) \(userLastname)"
     }
     
-    func isTravelling() -> Bool {
-        return userID % 12 == 0
+    func isTravelling() async -> Bool {
+        let apiService = StaySafeAPIService()
+        do {
+            let activities = try await apiService.getActivities(userID: String(userID))
+            for activity in activities {
+                if (activity.isCurrent()) {
+                    return true
+                }
+            }
+        } catch {
+            print("Error fetching activities: \(error)")
+        }
+        return false
     }
 
     enum CodingKeys: String, CodingKey {

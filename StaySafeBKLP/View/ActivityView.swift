@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ActivityView: View {
     @State var activity: Activity
+    let viewTitle: String
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -91,7 +92,7 @@ struct ActivityView: View {
                 .padding(.vertical)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Trip Details")
+            .navigationTitle(viewTitle)
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -130,7 +131,8 @@ struct ActivityView: View {
             activityArrive: "2025-03-22T10:00:00Z",
             activityStatusID: 3,
             activityStatusName: "Planned"
-        ))
+        )),
+        viewTitle: "Trip Details"
    )
 }
 

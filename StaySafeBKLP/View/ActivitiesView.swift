@@ -22,7 +22,10 @@ struct ActivitiesView: View {
 
                 List(filteredActivities, id: \.id) { activity in
                     NavigationLink(
-                        destination: ActivityView(activity: activity),
+                        destination: ActivityView(
+                            activity: activity,
+                            viewTitle: "Trip Details"
+                        ),
                         label: {
                             ActivityCard(activity: activity)
                         }

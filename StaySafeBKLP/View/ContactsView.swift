@@ -43,10 +43,10 @@ struct ContactsView: View {
 struct ContactCard: View {
     
     var contact: ContactDetail
-    
+    @State var isTravelling: Bool? = nil
+
     var body: some View {
         HStack(spacing: 12) {
-            statusIndicator
             VStack(alignment: .leading, spacing: 4) {
                 Text(contact.fullName)
                     .font(.subheadline)
@@ -61,14 +61,20 @@ struct ContactCard: View {
                             .font(.caption)
                     }
                     Spacer()
-                    if (contact.isTravelling()) {
-                        Text("Currently travelling")
-                            .font(.footnote)
-                            .foregroundColor(.white)      // Set the text color to white
-                            .padding(5)                   // Add some internal padding
-                            .background(Color.green)      // Set the background color to green
-                            .cornerRadius(5)              // Optional: Add rounded corners for a nicer look
+                    if let isTravelling {
+                        if (isTravelling) {
+                            Text("Currently travelling")
+                                .font(.footnote)
+                                .foregroundColor(.white)      // Set the text color to white
+                                .padding(5)                   // Add some internal padding
+                                .background(Color.green)      // Set the background color to green
+                                .cornerRadius(5)              // Optional: Add rounded corners for a nicer look
+                            
+                        }
                     }
+                }
+                .task {
+                    isTravelling = await contact.isTravelling()
                 }
             }
             
@@ -80,20 +86,95 @@ struct ContactCard: View {
         .cornerRadius(8)
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
-    
-    private var statusIndicator: some View {
-        Circle()
-            .fill(
-                DateFormattingUtility.contactColor(for: String(contact.userContactID))
-            )
-            .frame(width: 12, height: 12)
-    }
 }
 
+//struct ContactDetailView: View {
+//    private let apiService = StaySafeAPIService()
+//    var contact: ContactDetail
+//    @State var currentActivity: Activity? = nil
+//    
+//    var body: some View {
+//        VStack {
+//            ProfileDisplay(profile: contact)
+//                .padding(.vertical)
+//        }
+//        .task {
+//            await loadCurrentActivity()
+//        }
+//        if (contact.isTravelling()) {
+//            if let activity = currentActivity {
+//                ActivityView(activity: activity)
+//            }
+//        } else {
+//            Text("No current trip to display")
+//                .font(.subheadline)
+//                .italic()
+//        }
+//    }
 struct ContactDetailView: View {
+    private let apiService = StaySafeAPIService()
     var contact: ContactDetail
+    @State var currentActivity: Activity? = nil
+    @State var isTravelling: Bool? = nil
+
     var body: some View {
-        ProfileDisplay(profile: contact)
+        VStack {
+            ProfileDisplay(profile: contact)
+                .padding(.vertical)
+
+            if let travelling = isTravelling {
+                if travelling {
+                    if let activity = currentActivity {
+                        ActivityView(
+                            activity: activity,
+                            viewTitle: "\(contact.userFirstname)'s Current Trip"
+                        )
+                    } else {
+                        Text("Loading current trip...")
+                    }
+                } else {
+                    Text("No current trip to display")
+                        .font(.subheadline)
+                        .italic()
+                }
+            } else {
+                Text("Checking travel status...")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .task {
+            // Load the travel status asynchronously.
+            self.isTravelling = await contact.isTravelling()
+            
+            // If the contact is travelling, attempt to load the current activity.
+            if self.isTravelling == true {
+                await loadCurrentActivity()
+            }
+        }
+    }
+    
+    private func loadCurrentActivity() async {
+        do {
+            let contactActivities = try await apiService.getActivities(userID: String(contact.userID))
+            let currentActivities = contactActivities.filter { $0.isCurrent() }
+            
+            // Set up a DateFormatter to parse the 'activityLeave' string.
+            let dateFormatter = DateFormatter()
+            // Adjust the date format string to match the format of 'activityLeave'.
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            
+            // Find the current activity with the most recent (i.e. maximum) departure time.
+            let mostRecentActivity = currentActivities.max { (activityA, activityB) in
+                guard let dateA = dateFormatter.date(from: activityA.activityLeave),
+                      let dateB = dateFormatter.date(from: activityB.activityLeave) else {
+                    return false // If one date fails to parse, don't consider it less than the other.
+                }
+                return dateA < dateB
+            }
+            currentActivity = mostRecentActivity
+        } catch {
+            print("Error fetching activities: \(error)")
+        }
     }
 }
 //struct ContactDisplay: View {
