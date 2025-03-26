@@ -41,6 +41,12 @@ class StaySafeAPIService {
         return try await apiService.delete(endpoint: "users/\(id)")
     }
 
+    /// Find a user by username
+    func findUserByUsername(_ username: String) async throws -> User? {
+        let users: [User] = try await apiService.get(endpoint: "users?UserUsername=\(username)")
+        return users.first
+    }
+
     // MARK: - Contact API Methods
 
     /// Fetch all contacts with user details for a specific user
