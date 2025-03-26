@@ -13,25 +13,9 @@ struct TripDetailsView: View {
         NavigationStack {
             List {
                 Section {
-                    HStack {
-                        Image(systemName: "mappin.and.ellipse")
-                            .foregroundColor(.red)
-                        Text(activity.activityToName ?? "Destination")
-                    }
-
-                    HStack {
-                        Image(systemName: "clock")
-                        Text(
-                            "Departure: \(DateFormattingUtility.formatISOString(activity.activityLeave, style: DateFormattingUtility.timeOnly))"
-                        )
-                    }
-
-                    HStack {
-                        Image(systemName: "flag.checkered")
-                        Text(
-                            "Estimated arrival: \(DateFormattingUtility.formatISOString(activity.activityArrive, style: DateFormattingUtility.timeOnly))"
-                        )
-                    }
+                    SectionRow(imageName: "mappin.and.ellipse", imageColor: .red, rowText: activity.activityToName ?? "Destination")
+                    SectionRow(imageName: "clock", rowText: "Departure: \(DateFormattingUtility.formatISOString(activity.activityLeave, style: DateFormattingUtility.timeOnly))")
+                    SectionRow(imageName: "flag.checkered", rowText: "Estimated arrival: \(DateFormattingUtility.formatISOString(activity.activityArrive, style: DateFormattingUtility.timeOnly))")
                 }
 
                 Section {
@@ -106,6 +90,36 @@ struct TripDetailsView: View {
     }
 }
 
+struct SectionRow: View {
+    let imageName: String?
+    let imageColor: Color
+    let rowText: String
+    let isItalic: Bool
+
+    init(
+        imageName: String? = nil,
+        imageColor: Color = .black,
+        rowText: String,
+        isItalic: Bool = false
+    ) {
+        self.imageName = imageName
+        self.imageColor = imageColor
+        self.rowText = rowText
+        self.isItalic = isItalic
+    }
+    
+    var body: some View {
+        HStack {
+            if let imageName {
+                Image(systemName: imageName)
+                .foregroundColor(imageColor)
+            }
+            Text(rowText)
+                .italic(isItalic)
+        }
+    }
+}
+
 // MARK: - Preview
 #Preview {
     let sampleActivity = Activity(
@@ -128,3 +142,4 @@ struct TripDetailsView: View {
         onEndTrip: { print("Trip ended") }
     )
 }
+

@@ -2,32 +2,19 @@ import Foundation
 
 /// Represents a planned journey between locations at a specified time.
 struct Activity: Codable, Identifiable, Equatable {
-    /// Unique identifier for the activity
     var activityID: Int
-    /// Name of the activity
     var activityName: String
-    /// ID of the user associated with the activity
     var activityUserID: Int
-    /// Username of the associated user (extended field)
-    var activityUsername: String?
-    /// Description of the activity
+    var activityUsername: String? /// Username of the associated user (extended field)
     var activityDescription: String
-    /// ID of the departure location
     var activityFromID: Int
-    /// Name of the departure location (extended field)
-    var activityFromName: String?
-    /// Date and time of departure
-    var activityLeave: String
-    /// ID of the arrival location
-    var activityToID: Int
-    /// Name of the arrival location (extended field)
-    var activityToName: String?
-    /// Date and time of arrival
-    var activityArrive: String
-    /// ID representing the status of the activity
-    var activityStatusID: Int
-    /// Name of the activity status (extended field)
-    var activityStatusName: String?
+    var activityFromName: String? /// Name of the departure location (extended field)
+    var activityLeave: String /// Date and time of departure
+    var activityToID: Int /// ID of the arrival location
+    var activityToName: String? /// Name of the arrival location (extended field)
+    var activityArrive: String /// Date and time of arrival
+    var activityStatusID: Int /// ID representing the status of the activity
+    var activityStatusName: String? /// Name of the activity status (extended field)
 
     /// Computed id property for Identifiable conformance
     var id: Int { activityID }
@@ -51,4 +38,9 @@ struct Activity: Codable, Identifiable, Equatable {
     static func == (lhs: Activity, rhs: Activity) -> Bool {
         return lhs.activityID == rhs.activityID
     }
+    
+    func isCurrent() -> Bool {
+        activityStatusID >= 1 && activityStatusID <= 3
+    }
 }
+

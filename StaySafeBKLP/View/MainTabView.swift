@@ -15,7 +15,7 @@ struct MainTabView: View {
                 case .home:
                     HomeView()
                 case .trips:
-                    TripsView()
+                    ActivitiesView()
                 case .map:
                     MapView()
                 case .contacts:
