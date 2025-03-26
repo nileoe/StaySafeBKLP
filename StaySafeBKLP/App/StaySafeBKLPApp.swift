@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct StaySafeBKLPApp: App {
-    @StateObject private var userContext = UserContext()
+    @StateObject private var userContext = UserContext.shared
 
     var body: some Scene {
         WindowGroup {

@@ -6,6 +6,7 @@ enum APIError: Error {
     case invalidResponse
     case decodingError(Error)
     case serverError(Int)
+    case invalidUser
     case unknownError
 
     var description: String {
@@ -20,6 +21,8 @@ enum APIError: Error {
             return "Failed to decode response: \(error.localizedDescription)"
         case .serverError(let code):
             return "Server error with status code: \(code)"
+        case .invalidUser:
+            return "Invalid user context"
         case .unknownError:
             return "An unknown error occurred"
         }
