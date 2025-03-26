@@ -4,12 +4,16 @@ struct ContactsView: View {
     private let apiService = StaySafeAPIService()
     @EnvironmentObject var userContext: UserContext
     @State private var contacts: [ContactDetail] = []
+    @State private var selectedContact: ContactDetail? = nil
     
     var body: some View {
         NavigationStack {
             VStack {
                 List(contacts, id: \.id) {contact in
                     ContactCard(contact: contact)
+                        .onTapGesture {
+                            selectedContact = contact
+                        }
                 }
                 .task {
                     await loadContacts()
@@ -17,6 +21,9 @@ struct ContactsView: View {
             }
             .navigationTitle("Contacts")
         }
+        .sheet(item: $selectedContact) { contact in
+                    ContactDetailView(contact: contact)
+                }
     }
     
     private func loadContacts() async {
@@ -83,7 +90,27 @@ struct ContactCard: View {
     }
 }
 
-
+struct ContactDetailView: View {
+    var contact: ContactDetail
+    var body: some View {
+        ProfileDisplay(profile: contact)
+    }
+}
+//struct ContactDisplay: View {
+//    let contact: Contact
+//    var body: some View {
+//        VStack {
+//            ProfileImage(imageURL: contact.userImageURL)
+////            UserInfoSection(user: user)
+//            UserInfoSection(
+//                fullName: user.fullName,
+//                username: user.userUsername,
+//                phone: user.userPhone
+//            )
+//                .padding(.top, 40)
+//        }
+//    }
+//}
 
 #Preview {
     ContactsView()

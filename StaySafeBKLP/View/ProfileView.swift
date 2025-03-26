@@ -3,22 +3,21 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var userContext: UserContext
-
+    
     var body: some View {
         NavigationStack {
             VStack(alignment: .center, spacing: 20) {
                 // Profile Image
-                profileImage
-
+                
                 // User Info
                 if let user = userContext.currentUser {
-                    userInfoSection(user: user)
-                        .padding(.top, 40)
+//                    UserDisplay(user: user)
+                    ProfileDisplay(profile: user)
                 } else {
                     Text("User information not available")
                         .foregroundColor(.secondary)
                 }
-
+                
                 // Logout Button
                 Button(action: {
                     userContext.logout()
@@ -46,12 +45,19 @@ struct ProfileView: View {
             .navigationTitle("Profile")
         }
     }
+}
 
-    // MARK: - Components
+// MARK: - Components
 
-    private var profileImage: some View {
+
+struct ProfileImage: View {
+//    let user: User // TODO meh
+    let imageURL: String?
+    
+    var body: some View {
         Group {
-            if let imageURL = userContext.currentUser?.userImageURL, !imageURL.isEmpty {
+//            if let imageURL = user.userImageURL, !imageURL.isEmpty {
+            if let imageURL = imageURL {
                 AsyncImage(url: URL(string: imageURL)) { image in
                     image
                         .resizable()
@@ -72,25 +78,39 @@ struct ProfileView: View {
             }
         }
     }
+}
 
-    private func userInfoSection(user: User) -> some View {
+
+struct UserInfoSection: View {
+//    let user: User
+    let fullName: String
+    let username: String
+    let phone: String
+    
+    var body: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text(user.fullName)
+            Text(fullName)
                 .font(.title)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .center)
-
-            infoRow(title: "Username", value: user.userUsername)
-            infoRow(title: "Phone", value: user.userPhone)
-            infoRow(title: "User ID", value: String(user.userID))
+            
+//            infoRow(title: "Username", value: user.userUsername)
+//            infoRow(title: "Phone", value: user.userPhone)
+            infoRow(title: "Username", value: username)
+            infoRow(title: "Phone", value: phone)
+//            infoRow(title: "User ID", value: String(user.userID))
         }
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
         .padding(.horizontal, 20)
     }
+}
 
-    private func infoRow(title: String, value: String) -> some View {
+struct infoRow: View {
+    let title: String
+    let value: String
+    var body: some View {
         HStack {
             Text(title + ":")
                 .fontWeight(.medium)
@@ -99,7 +119,22 @@ struct ProfileView: View {
                 .fontWeight(.medium)
         }
     }
+}
 
+struct ProfileDisplay<Profile: ProfileDisplayable>: View {
+    let profile: Profile
+    var body: some View {
+        VStack {
+            ProfileImage(imageURL: profile.userImageURL)
+//            UserInfoSection(user: user)
+            UserInfoSection(
+                fullName: profile.fullName,
+                username: profile.userUsername,
+                phone: profile.userPhone
+            )
+                .padding(.top, 40)
+        }
+    }
 }
 
 #Preview {

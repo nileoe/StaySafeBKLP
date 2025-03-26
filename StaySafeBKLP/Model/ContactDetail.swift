@@ -12,7 +12,7 @@ struct ContactDetail: Codable, Identifiable {
     var userLatitude: Double
     var userLongitude: Double
     var userTimestamp: Int
-    var userImageURL: String
+    var userImageURL: String?
 
     // Contact relationship information
     var userContactID: Int
@@ -47,3 +47,11 @@ struct ContactDetail: Codable, Identifiable {
         case userContactDatecreated = "UserContactDatecreated"
     }
 }
+
+protocol ProfileDisplayable {
+    var fullName: String { get }
+    var userImageURL: String? { get }
+    var userUsername: String { get }
+    var userPhone: String { get }
+}
+extension ContactDetail: ProfileDisplayable {}
