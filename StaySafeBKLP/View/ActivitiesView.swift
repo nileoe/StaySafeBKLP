@@ -3,6 +3,7 @@ import SwiftUI
 struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
     @State private var activities: [Activity] = []
+//    private let loggedInUser: User // TODO will be passed or accessed through environment var.?
     var body: some View {
         NavigationView {
             List {
@@ -18,7 +19,8 @@ struct ActivitiesView: View {
             }
             .task {
                 do {
-                    activities = try await apiService.getAllActivities()
+                    activities = try await apiService.getActivities(userID: "1") // TODO placeholder user ID
+//                    activities = try await apiService.getActivities(loggedInUser.userID)
                 } catch {
                     print("Unexpected error when fetching activities")
                 }
