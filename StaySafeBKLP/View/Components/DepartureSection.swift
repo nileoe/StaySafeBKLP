@@ -2,22 +2,43 @@ import SwiftUI
 
 struct DepartureSection: View {
     @Binding var departureDate: Date
-    let onChange: () -> Void
+    @State private var isValid: Bool = true
+    @State private var validationMessage: String = ""
+    var onChange: () -> Void
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Departure")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Departure")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
 
-                DatePicker(
-                    "", selection: $departureDate, displayedComponents: [.date, .hourAndMinute]
-                )
-                .labelsHidden()
-                .onChange(of: departureDate) { _, _ in onChange() }
+            DatePicker(
+                "", selection: $departureDate, displayedComponents: [.date, .hourAndMinute]
+            )
+            .labelsHidden()
+            .onChange(of: departureDate) { _, _ in
+                validateDepartureTime()
+                onChange()
             }
-            Spacer()
+
+            if !isValid {
+                Text(validationMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+        }
+    }
+
+    private func validateDepartureTime() {
+        let now = Date()
+        let oneMinuteAgo = now.addingTimeInterval(-60)  // Add 1-minute buffer
+
+        if departureDate < oneMinuteAgo {
+            isValid = false
+            validationMessage = "Departure time cannot be in the past."
+        } else {
+            isValid = true
+            validationMessage = ""
         }
     }
 }
@@ -41,17 +62,10 @@ struct DepartureSection_Previews: PreviewProvider {
                         print("Date changed to: \(departureDate)")
                     })
 
-                Text("Selected: \(departureDate, formatter: dateFormatter)")
+                Text("Selected: \(departureDate, formatter: DateFormattingUtility.shortDateTime)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-        }
-
-        private var dateFormatter: DateFormatter {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .short
-            return formatter
         }
     }
 }

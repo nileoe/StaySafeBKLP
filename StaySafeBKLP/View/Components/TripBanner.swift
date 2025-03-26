@@ -3,21 +3,19 @@ import CoreLocation
 import MapKit
 
 struct TripBanner: View {
-    let trip: TripDetails
-    let timeFormatter: DateFormatter
+    let activity: Activity
     let onTap: () -> Void
     
     var body: some View {
         Button(action: onTap) {
             HStack {
                 VStack(alignment: .leading) {
-                    Text("Trip to \(trip.destinationName)")
+                    Text(activity.activityName)
                         .font(.headline)
-                    
-                    if let arrival = trip.estimatedArrivalTime {
-                        Text("Arrival: \(arrival, formatter: timeFormatter)")
-                            .font(.subheadline)
-                    }
+
+                    Text(
+                        "Arrival: \(DateFormattingUtility.formatISOString(activity.activityArrive, style: DateFormattingUtility.timeOnly))"
+                    )
                 }
                 .padding(.leading)
                 
@@ -39,23 +37,20 @@ struct TripBanner: View {
 
 // MARK: - Preview
 #Preview {
-    let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter
-    }()
-    
-    let sampleTrip = TripDetails(
-        destination: CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278),
-        destinationName: "London Eye",
-        transportType: .walking,
-        departureTime: Date(),
-        estimatedArrivalTime: Date().addingTimeInterval(3600) // 1 hour from now
+    let sampleTrip = Activity(
+        activityID: 1,
+        activityName: "Trip to London Eye",
+        activityUserID: 1,
+        activityDescription: "Sightseeing trip",
+        activityFromID: 1,
+        activityLeave: "2025-03-25T07:33:21.000Z",
+        activityToID: 2,
+        activityArrive: "2025-03-25T07:43:45.000Z",
+        activityStatusID: 1
     )
 
     TripBanner(
-        trip: sampleTrip,
-        timeFormatter: dateFormatter,
+        activity: sampleTrip,
         onTap: {}
     )
     .padding()

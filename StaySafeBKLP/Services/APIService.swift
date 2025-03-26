@@ -59,7 +59,7 @@ class APIService {
             print("Making GET request to: \(url)")
         }
 
-        return try await performRequest(request: request)
+        return try await performRequestWithPossibleArrayResponse(request: request)
     }
 
     /// Generic POST request
@@ -75,7 +75,8 @@ class APIService {
         do {
             let jsonData = try JSONEncoder().encode(body)
             request.httpBody = jsonData
-            return try await performRequest(request: request)
+
+            return try await performRequestWithPossibleArrayResponse(request: request)
         } catch {
             throw APIError.requestFailed(error)
         }
@@ -94,7 +95,7 @@ class APIService {
         do {
             let jsonData = try JSONEncoder().encode(body)
             request.httpBody = jsonData
-            return try await performRequest(request: request)
+            return try await performRequestWithPossibleArrayResponse(request: request)
         } catch {
             throw APIError.requestFailed(error)
         }
@@ -110,11 +111,13 @@ class APIService {
         request.httpMethod = "DELETE"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        return try await performRequest(request: request)
+        return try await performRequestWithPossibleArrayResponse(request: request)
     }
 
-    /// Helper method to perform requests
-    private func performRequest<T: Codable>(request: URLRequest) async throws -> T {
+    /// Helper method to perform requests that might return arrays or single objects
+    private func performRequestWithPossibleArrayResponse<T: Codable>(request: URLRequest)
+        async throws -> T
+    {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -126,30 +129,42 @@ class APIService {
                 throw APIError.serverError(httpResponse.statusCode)
             }
 
-            // Debug logging (kept compact)
+            // Debug logging
             if self.debugMode, let jsonString = String(data: data, encoding: .utf8) {
                 print("Response from \(request.url?.lastPathComponent ?? "unknown"):")
                 print(jsonString)
-
-                // Simplified array vs object logging
-                if let jsonObject = try? JSONSerialization.jsonObject(with: data) {
-                    let isArrayResponse = jsonObject is [Any]
-                    let isArrayExpected = T.self is [Any].Type
-
-                    if isArrayResponse && !isArrayExpected {
-                        print(
-                            "Note: API returned array for single object request (handled by wrapper)"
-                        )
-                    } else if !isArrayResponse && isArrayExpected {
-                        print("Warning: Expected array but got object")
-                    }
-                }
             }
 
+            // Try to determine if response is array or object
+            guard let jsonObject = try? JSONSerialization.jsonObject(with: data) else {
+                throw APIError.invalidResponse
+            }
+
+            // First try to decode as expected type
             do {
                 return try JSONDecoder().decode(T.self, from: data)
             } catch {
-                debugPrint("Decoding error: \(error)")
+                // If expected type is an array but got a single object, wrap it
+                if T.self is [Any].Type, !(jsonObject is [Any]) {
+                    print("Expected array but got object, attempting to wrap in array...")
+
+                    // Create a wrapper array
+                    let wrappedData = try JSONSerialization.data(withJSONObject: [jsonObject])
+                    return try JSONDecoder().decode(T.self, from: wrappedData)
+                }
+                // If expected type is a single object but got an array with one item, unwrap it
+                else if !(T.self is [Any].Type), let array = jsonObject as? [Any], array.count == 1
+                {
+                    print("Expected object but got array, attempting to extract first item...")
+
+                    // Extract first item from array
+                    if let firstObject = array.first {
+                        let singleItemData = try JSONSerialization.data(withJSONObject: firstObject)
+                        return try JSONDecoder().decode(T.self, from: singleItemData)
+                    }
+                }
+
+                // If all attempts failed, throw the original error
                 self.logDecodingError(data: data, type: T.self, error: error)
                 throw APIError.decodingError(error)
             }
