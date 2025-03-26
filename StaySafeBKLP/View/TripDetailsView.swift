@@ -13,25 +13,9 @@ struct TripDetailsView: View {
         NavigationStack {
             List {
                 Section {
-                    HStack {
-                        Image(systemName: "mappin.and.ellipse")
-                            .foregroundColor(.red)
-                        Text(activity.activityToName ?? "Destination")
-                    }
-
-                    HStack {
-                        Image(systemName: "clock")
-                        Text(
-                            "Departure: \(DateFormattingUtility.formatISOString(activity.activityLeave, style: DateFormattingUtility.timeOnly))"
-                        )
-                    }
-
-                    HStack {
-                        Image(systemName: "flag.checkered")
-                        Text(
-                            "Estimated arrival: \(DateFormattingUtility.formatISOString(activity.activityArrive, style: DateFormattingUtility.timeOnly))"
-                        )
-                    }
+                    SectionRow(imageName: "mappin.and.ellipse", imageColor: .red, rowText: activity.activityToName ?? "Destination")
+                    SectionRow(imageName: "clock", rowText: "Departure: \(DateFormattingUtility.formatISOString(activity.activityLeave, style: DateFormattingUtility.timeOnly))")
+                    SectionRow(imageName: "flag.checkered", rowText: "Estimated arrival: \(DateFormattingUtility.formatISOString(activity.activityArrive, style: DateFormattingUtility.timeOnly))")
                 }
 
                 Section {
@@ -105,6 +89,25 @@ struct TripDetailsView: View {
         }
     }
 }
+struct SectionRow: View {
+    let imageName: String
+    let imageColor: Color
+    let rowText: String
+    
+    init(imageName: String, imageColor: Color = .black, rowText: String) {
+            self.imageName = imageName
+            self.imageColor = imageColor
+            self.rowText = rowText
+        }
+    
+    var body: some View {
+        HStack {
+            Image(systemName: imageName)
+                .foregroundColor(imageColor)
+            Text(rowText)
+        }
+    }
+}
 
 // MARK: - Preview
 #Preview {
@@ -128,3 +131,4 @@ struct TripDetailsView: View {
         onEndTrip: { print("Trip ended") }
     )
 }
+
