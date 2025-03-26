@@ -47,16 +47,17 @@ class StaySafeAPIService {
         return users.first
     }
 
-    // MARK: - Contact API Methods
+//     MARK: - Contact API Methods
 
-    /// Fetch all contacts with user details for a specific user
-    func getContactDetails(userID: String) async throws -> [ContactDetail] {
-        return try await apiService.get(endpoint: "users/contacts/\(userID)")
-    }
+    /// Fetch all contacts with user details for a specific user TODO remove
+//    func getContactDetails(userID: String) async throws -> [ContactDetail] {
+//        return try await apiService.get(endpoint: "users/contacts/\(userID)")
+//    }
 
     /// Fetch all contacts for a specific user using ContactDetail model
     func getContacts(userID: String) async throws -> [ContactDetail] {
-        return try await getContactDetails(userID: userID)
+//        return try await getContactDetails(userID: userID)
+        return try await apiService.get(endpoint: "users/contacts/\(userID)")
     }
 
     /// Fetch a specific contact by ID
