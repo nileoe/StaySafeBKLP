@@ -6,6 +6,7 @@ class UserContext: ObservableObject {
     @Published var isLoggedIn: Bool = false
     @Published var isLoading: Bool = false
     @Published var error: String?
+    static let shared: UserContext = UserContext()
 
     private let apiService = StaySafeAPIService()
     private let userDefaultsKey = "storedUserID"

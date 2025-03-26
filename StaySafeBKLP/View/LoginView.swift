@@ -13,7 +13,7 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-]            Color(
+            Color(
                 colorScheme == .dark
                     ? Color(UIColor(white: 0.10, alpha: 1.0)) : Color(UIColor.systemGray6)
             )

@@ -16,8 +16,12 @@ class ActivityCreationService {
         estimatedArrivalTime: Date?,
         statusID: Int = 1  // Default to Planned (1)
     ) async throws -> Activity {
-        // Will switch this to use the actual user ID when implemented
-        let userId = 1
+
+        guard let currentUser = UserContext.shared.currentUser else {
+            throw APIError.invalidUser
+        }
+
+        let userId = currentUser.userID
 
         // Get or create locations for the departure and destination
         let userLocation =
@@ -55,7 +59,7 @@ class ActivityCreationService {
             activityID: 1,  // Will be assigned by the server
             activityName: String("Trip to \(destinationName)".prefix(60)),
             activityUserID: userId,
-            activityUsername: nil,  // Optional field
+            activityUsername: currentUser.userUsername,  // Optional field
             activityDescription: "Trip using \(TransportType(mapKitType: transportType).rawValue)",
             activityFromID: departureLocation.locationID,
             activityFromName: departureLocation.locationName,
