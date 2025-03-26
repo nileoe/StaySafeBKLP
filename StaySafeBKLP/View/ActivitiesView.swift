@@ -2,15 +2,15 @@ import SwiftUI
 
 struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
-    
+    @EnvironmentObject var userContext: UserContext
+
     @State private var activities: [Activity] = []
     @State private var showCurrentActivitiesOnly: Bool = true
 
     private var filteredActivities: [Activity] {
-        return showCurrentActivitiesOnly ? activities.filter({$0.isCurrent()}) : activities
+        return showCurrentActivitiesOnly ? activities.filter { $0.isCurrent() } : activities
     }
-    
-//    private let loggedInUser: User // TODO will be passed or accessed through environment var.?
+
     var body: some View {
         NavigationView {
             VStack {
@@ -19,27 +19,33 @@ struct ActivitiesView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top)
-                List {
-                    ForEach(
-                        filteredActivities, id: \.id) { activity in
-                            NavigationLink(
-                                destination: ActivityView(activity: activity),
-                                label: {
-                                    ActivityCard(activity: activity)
-                                }
-                            )
+
+                List(filteredActivities, id: \.id) { activity in
+                    NavigationLink(
+                        destination: ActivityView(activity: activity),
+                        label: {
+                            ActivityCard(activity: activity)
                         }
+                    )
                 }
                 .task {
-                    do {
-                        activities = try await apiService.getActivities(userID: "1") // TODO placeholder user ID
-                        //                    activities = try await apiService.getActivities(loggedInUser.userID)
-                    } catch {
-                        print("Unexpected error when fetching activities")
-                    }
+                    await loadActivities()
                 }
                 .navigationTitle("My Trips")
             }
+        }
+    }
+
+    private func loadActivities() async {
+        guard let user = userContext.currentUser else {
+            print("Error: No current user found.")
+            return
+        }
+
+        do {
+            activities = try await apiService.getActivities(userID: String(user.userID))
+        } catch {
+            print("Unexpected error when fetching activities: \(error)")
         }
     }
 }
