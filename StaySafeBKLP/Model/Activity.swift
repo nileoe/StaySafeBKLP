@@ -5,18 +5,17 @@ struct Activity: Codable, Identifiable, Equatable {
     var activityID: Int
     var activityName: String
     var activityUserID: Int
-    var activityUsername: String? /// Username of the associated user (extended field)
+    var activityUsername: String? /// (extended field)
     var activityDescription: String
     var activityFromID: Int
-    var activityFromName: String? /// Name of the departure location (extended field)
+    var activityFromName: String? /// (extended field)
     var activityLeave: String /// Date and time of departure
     var activityToID: Int /// ID of the arrival location
-    var activityToName: String? /// Name of the arrival location (extended field)
+    var activityToName: String? /// (extended field)
     var activityArrive: String /// Date and time of arrival
     var activityStatusID: Int /// ID representing the status of the activity
-    var activityStatusName: String? /// Name of the activity status (extended field)
+    var activityStatusName: String? /// (extended field)
 
-    /// Computed id property for Identifiable conformance
     var id: Int { activityID }
 
     enum CodingKeys: String, CodingKey {

@@ -7,11 +7,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .center, spacing: 20) {
-                // Profile Image
-                
-                // User Info
                 if let user = userContext.currentUser {
-//                    UserDisplay(user: user)
                     ProfileDisplay(profile: user)
                 } else {
                     Text("User information not available")
@@ -51,12 +47,10 @@ struct ProfileView: View {
 
 
 struct ProfileImage: View {
-//    let user: User // TODO meh
     let imageURL: String?
     
     var body: some View {
         Group {
-//            if let imageURL = user.userImageURL, !imageURL.isEmpty {
             if let imageURL = imageURL {
                 AsyncImage(url: URL(string: imageURL)) { image in
                     image
@@ -82,7 +76,6 @@ struct ProfileImage: View {
 
 
 struct UserInfoSection: View {
-//    let user: User
     let fullName: String
     let username: String
     let phone: String
@@ -94,11 +87,8 @@ struct UserInfoSection: View {
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .center)
             
-//            infoRow(title: "Username", value: user.userUsername)
-//            infoRow(title: "Phone", value: user.userPhone)
             infoRow(title: "Username", value: username)
             infoRow(title: "Phone", value: phone)
-//            infoRow(title: "User ID", value: String(user.userID))
         }
         .padding()
         .background(Color(.systemGray6))
@@ -126,7 +116,6 @@ struct ProfileDisplay<Profile: ProfileDisplayable>: View {
     var body: some View {
         VStack {
             ProfileImage(imageURL: profile.userImageURL)
-//            UserInfoSection(user: user)
             UserInfoSection(
                 fullName: profile.fullName,
                 username: profile.userUsername,

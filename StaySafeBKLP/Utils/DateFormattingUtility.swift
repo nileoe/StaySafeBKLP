@@ -81,8 +81,4 @@ struct DateFormattingUtility {
             return .gray
         }
     }
-    static func contactColor(for contactUserId: String?) -> Color {
-//        guard let status = statusName?.lowercased() else { return .gray }
-        return .blue
-    }
 }

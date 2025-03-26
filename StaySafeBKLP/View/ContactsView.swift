@@ -65,10 +65,10 @@ struct ContactCard: View {
                         if (isTravelling) {
                             Text("Currently travelling")
                                 .font(.footnote)
-                                .foregroundColor(.white)      // Set the text color to white
-                                .padding(5)                   // Add some internal padding
-                                .background(Color.green)      // Set the background color to green
-                                .cornerRadius(5)              // Optional: Add rounded corners for a nicer look
+                                .foregroundColor(.white)
+                                .padding(5)
+                                .background(Color.green)
+                                .cornerRadius(5)
                             
                         }
                     }
@@ -88,29 +88,6 @@ struct ContactCard: View {
     }
 }
 
-//struct ContactDetailView: View {
-//    private let apiService = StaySafeAPIService()
-//    var contact: ContactDetail
-//    @State var currentActivity: Activity? = nil
-//    
-//    var body: some View {
-//        VStack {
-//            ProfileDisplay(profile: contact)
-//                .padding(.vertical)
-//        }
-//        .task {
-//            await loadCurrentActivity()
-//        }
-//        if (contact.isTravelling()) {
-//            if let activity = currentActivity {
-//                ActivityView(activity: activity)
-//            }
-//        } else {
-//            Text("No current trip to display")
-//                .font(.subheadline)
-//                .italic()
-//        }
-//    }
 struct ContactDetailView: View {
     private let apiService = StaySafeAPIService()
     var contact: ContactDetail
@@ -143,10 +120,9 @@ struct ContactDetailView: View {
             }
         }
         .task {
-            // Load the travel status asynchronously.
             self.isTravelling = await contact.isTravelling()
             
-            // If the contact is travelling, attempt to load the current activity.
+            // If the contact is travelling attempt to load the current activity.
             if self.isTravelling == true {
                 await loadCurrentActivity()
             }
@@ -158,16 +134,14 @@ struct ContactDetailView: View {
             let contactActivities = try await apiService.getActivities(userID: String(contact.userID))
             let currentActivities = contactActivities.filter { $0.isCurrent() }
             
-            // Set up a DateFormatter to parse the 'activityLeave' string.
             let dateFormatter = DateFormatter()
-            // Adjust the date format string to match the format of 'activityLeave'.
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
             
             // Find the current activity with the most recent (i.e. maximum) departure time.
             let mostRecentActivity = currentActivities.max { (activityA, activityB) in
                 guard let dateA = dateFormatter.date(from: activityA.activityLeave),
                       let dateB = dateFormatter.date(from: activityB.activityLeave) else {
-                    return false // If one date fails to parse, don't consider it less than the other.
+                    return false // If one date fails to parse => don't consider it for sorting
                 }
                 return dateA < dateB
             }
