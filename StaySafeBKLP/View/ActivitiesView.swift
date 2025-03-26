@@ -6,30 +6,39 @@ struct ActivitiesView: View {
     var body: some View {
         NavigationView {
             List {
+                //                ForEach(
+                //                    activities, id: \.id) { activity in
+                //                        ActivityCard(activity: activity)
+                //                            .padding(.vertical, 2)
+                //                    }
+                //                    .navigationTitle("My Trips")
                 ForEach(
                     activities, id: \.id) { activity in
-                        ActivityCard(activity: activity)
-                            .padding(.vertical, 2)
+                        NavigationLink(
+                            destination: ActivityView(
+                                activity: activity,
+                                handleConfirm: nil,
+                                handleCancel: nil,
+                                confirmButtonText: "confirm"
+                            ),
+                            label: {
+                                ActivityCard(activity: activity)
+                            }
+                        )
                     }
-                    .navigationTitle("My Trips")
             }
-        }
-        .task {
-            do {
-                activities = try await apiService.getAllActivities()
-//            } catch TripError.invalidData {
-//                print("Fetching trips: invalid data")
-//            } catch TripError.invalidURL {
-//                print("Fetching trips: invalid url")
-//            } catch TripError.invalidResponse {
-//                print("Fetching trips: invalid response")
-            } catch {
-                print("unexpected error when fetching activities")
-            }
-            for activity in activities {
-                print(activity)
-                print()
-                print()
+            .task {
+                do {
+                    activities = try await apiService.getAllActivities()
+                    //            } catch TripError.invalidData {
+                    //                print("Fetching trips: invalid data")
+                    //            } catch TripError.invalidURL {
+                    //                print("Fetching trips: invalid url")
+                    //            } catch TripError.invalidResponse {
+                    //                print("Fetching trips: invalid response")
+                } catch {
+                    print("unexpected error when fetching activities")
+                }
             }
         }
     }
