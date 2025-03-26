@@ -9,21 +9,7 @@ struct ContactsView: View {
         NavigationStack {
             VStack {
                 List(contacts, id: \.id) {contact in
-                    Text("\(contact.userID)")
-                    Text("\(contact.userFirstname)")
-                    Text("\(contact.userLastname)")
-                    Text("\(contact.userPhone)")
-                    Text("\(contact.userUsername)")
-                    Text("\(contact.userPassword)")
-                    Text("\(contact.userLatitude)")
-                    Text("\(contact.userLongitude)")
-                    Text("\(contact.userTimestamp)")
-                    Text("\(contact.userImageURL)")
-                    Text("\(contact.userContactID)")
-                    Text("\(contact.userContactLabel)")
-                    Text("\(contact.userContactDatecreated)")
-                    Text("\(contact.fullName)")
-                    Text("###################")
+                    ContactCard(contact: contact)
                 }
                 .task {
                     await loadContacts()
@@ -46,35 +32,59 @@ struct ContactsView: View {
     }
 }
 
+
+struct ContactCard: View {
+    
+    var contact: ContactDetail
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            statusIndicator
+            VStack(alignment: .leading, spacing: 4) {
+                Text(contact.fullName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                
+                HStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.crop.circle.fill")
+                            .foregroundColor(.green)
+                        Text(contact.userContactLabel)
+                            .font(.caption)
+                    }
+                    Spacer()
+                    if (contact.isTravelling()) {
+                        Text("Currently travelling")
+                            .font(.footnote)
+                            .foregroundColor(.white)      // Set the text color to white
+                            .padding(5)                   // Add some internal padding
+                            .background(Color.green)      // Set the background color to green
+                            .cornerRadius(5)              // Optional: Add rounded corners for a nicer look
+                    }
+                }
+            }
+            
+            Spacer()
+            
+        }
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+    
+    private var statusIndicator: some View {
+        Circle()
+            .fill(
+                DateFormattingUtility.contactColor(for: String(contact.userContactID))
+            )
+            .frame(width: 12, height: 12)
+    }
+}
+
+
+
 #Preview {
     ContactsView()
 }
-
-//I want to create a swift component screen that displays a list of the logged in user contact.
-//
-//struct ContactDetail: Codable, Identifiable {
-//    // User information
-//    var userID: Int
-//    var userFirstname: String
-//    var userLastname: String
-//    var userPhone: String
-//    var userUsername: String
-//    var userPassword: String
-//    var userLatitude: Double
-//    var userLongitude: Double
-//    var userTimestamp: Int
-//    var userImageURL: String
-//    
-//    // Contact relationship information
-//    var userContactID: Int
-//    var userContactLabel: String
-//    var userContactDatecreated: String
-//    
-//    // Conform to Identifiable
-//    var id: Int { userContactID }
-//    
-//    // Full name computed property
-//    var fullName: String {
-//        "\(userFirstname) \(userLastname)"
-//    }
-//}

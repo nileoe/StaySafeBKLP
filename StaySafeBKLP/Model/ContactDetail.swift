@@ -26,6 +26,10 @@ struct ContactDetail: Codable, Identifiable {
     var fullName: String {
         "\(userFirstname) \(userLastname)"
     }
+    
+    func isTravelling() -> Bool {
+        return userID % 12 == 0
+    }
 
     enum CodingKeys: String, CodingKey {
         case userID = "UserID"
