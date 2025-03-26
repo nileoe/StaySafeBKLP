@@ -12,7 +12,7 @@ struct ContactDetail: Codable, Identifiable {
     var userLatitude: Double
     var userLongitude: Double
     var userTimestamp: Int
-    var userImageURL: String
+    var userImageURL: String?
 
     // Contact relationship information
     var userContactID: Int
@@ -25,6 +25,21 @@ struct ContactDetail: Codable, Identifiable {
     // Full name computed property
     var fullName: String {
         "\(userFirstname) \(userLastname)"
+    }
+    
+    func isTravelling() async -> Bool {
+        let apiService = StaySafeAPIService()
+        do {
+            let activities = try await apiService.getActivities(userID: String(userID))
+            for activity in activities {
+                if (activity.isCurrent()) {
+                    return true
+                }
+            }
+        } catch {
+            print("Error fetching activities: \(error)")
+        }
+        return false
     }
 
     enum CodingKeys: String, CodingKey {
@@ -43,3 +58,11 @@ struct ContactDetail: Codable, Identifiable {
         case userContactDatecreated = "UserContactDatecreated"
     }
 }
+
+protocol ProfileDisplayable {
+    var fullName: String { get }
+    var userImageURL: String? { get }
+    var userUsername: String { get }
+    var userPhone: String { get }
+}
+extension ContactDetail: ProfileDisplayable {}

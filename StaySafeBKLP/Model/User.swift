@@ -44,3 +44,5 @@ struct User: Codable, Identifiable {
         case userImageURL = "UserImageURL"
     }
 }
+
+extension User: ProfileDisplayable {}
