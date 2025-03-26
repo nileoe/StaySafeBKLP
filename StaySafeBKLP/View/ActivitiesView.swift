@@ -6,12 +6,6 @@ struct ActivitiesView: View {
     var body: some View {
         NavigationView {
             List {
-                //                ForEach(
-                //                    activities, id: \.id) { activity in
-                //                        ActivityCard(activity: activity)
-                //                            .padding(.vertical, 2)
-                //                    }
-                //                    .navigationTitle("My Trips")
                 ForEach(
                     activities, id: \.id) { activity in
                         NavigationLink(
@@ -25,139 +19,65 @@ struct ActivitiesView: View {
             .task {
                 do {
                     activities = try await apiService.getAllActivities()
-                    //            } catch TripError.invalidData {
-                    //                print("Fetching trips: invalid data")
-                    //            } catch TripError.invalidURL {
-                    //                print("Fetching trips: invalid url")
-                    //            } catch TripError.invalidResponse {
-                    //                print("Fetching trips: invalid response")
                 } catch {
-                    print("unexpected error when fetching activities")
+                    print("Unexpected error when fetching activities")
                 }
             }
+        .navigationTitle("My Trips")
         }
     }
 }
 
 struct ActivityCard: View {
+    
     var activity: Activity
-    
-    private var arrivalTimeString: String {
-        let arrivalTime = activity.activityArrive
-        guard arrivalTime != "" else {
-            return "No arrival time recorded"
-        }
-        guard let arrivalLocation = activity.activityToName else {
-            return "No arrival location recorded"
-        }
-        guard let arrivalTimeString = formattedDate(arrivalTime) else {
-            return "Invalid arrival date string"
-        }
-        return "Arrival: \(arrivalLocation) at \(arrivalTimeString)"
-    }
-//    private var departureTimeString: String {
-//        if let departureTime = trip.departureTime {
-//            return "Departure: \(trip.departureLocationName) at \(formattedDate(departureTime))"
-//        } else {
-//            return "No departure time recorded"
-//       }
-//    }
-    
     private var departureTimeString: String {
         guard let departureLocation = activity.activityFromName else {
-            return "No departure location available"
+            return "Unknown location"
         }
-        guard let departureTimeString = formattedDate(activity.activityLeave) else {
-            return "Invalid departure date string"
-        }
-        return "Departure: \(departureLocation) at \(departureTimeString)"
+        let departureTimeString = DateFormattingUtility.formatISOString(activity.activityLeave)
+        return "From \(departureLocation) at \(departureTimeString)"
     }
-    
-    private var departureIconName: String {
-         return "arrow.up.circle.fill"
-     }
-//    private var departureIconName: String {
-//         return trip.departureTime != nil ? "arrow.up.circle.fill" : "questionmark.circle.fill"
-//     }
-     private var arrivalIconName: String {
-         return activity.activityArrive != "" ? "arrow.down.circle.fill" : "questionmark.circle.fill"
-     }
-    
-    private var arrivalIconColor: Color {
-        return activity.activityArrive != "" ? .blue: .orange
-    }
-    private var departureIconColor: Color {
-        // TODO remove: assuming emtpy string = no arrival time
-        return activity.activityLeave != "" ? .green  : .orange
-    }
+
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(activity.activityName)
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            Text(activity.activityDescription)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .lineLimit(2)
-            
-            Divider()
-            
-            HStack {
-                Image(systemName: departureIconName)
-                    .foregroundColor(departureIconColor)
-                Text(departureTimeString)
-                    .font(.caption)
-                    .foregroundColor(.primary)
-            }
-
-            HStack {
-                Image(systemName: arrivalIconName)
-                    .foregroundColor(arrivalIconColor)
-                Text(arrivalTimeString)
-                    .font(.caption)
-                    .foregroundColor(.primary)
+        HStack(spacing: 12) {
+            statusIndicator
+            VStack(alignment: .leading, spacing: 4) {
+                Text(activity.activityName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundColor(.green)
+                    Text(departureTimeString)
+                        .font(.caption)
+                }
+                
+                if let fromLocation = activity.activityFromName {
+                    Text(fromLocation)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
             
-            Divider()
+            Spacer()
             
-            HStack {
-                Image(systemName: "circle.fill")
-                    .foregroundColor(
-                        statusColor(for: activity.activityStatusName ?? "no status")
-                    )
-                Text(activity.activityStatusName ?? "no status")
-                    .font(.caption)
-                    .foregroundColor(.primary)
-            }
         }
-        .padding()
+        .padding(12)
         .background(Color(.systemBackground))
-        .cornerRadius(10)
-        .shadow(radius: 5)
-//        .padding(.horizontal)
+        .cornerRadius(8)
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
     
-//    private func formattedDate(_ date: Date) -> String {
-//        let formatter = DateFormatter()
-//        formatter.dateStyle = .short
-//        formatter.timeStyle = .short
-//        return formatter.string(from: date)
-//    }
-
-    
-    private func statusColor(for status: String) -> Color {
-        switch status.lowercased() {
-        case "completed":
-            return .green
-        case "in progress":
-            return .orange
-        case "cancelled":
-            return .red
-        default:
-            return .gray
-        }
+    private var statusIndicator: some View {
+        Circle()
+            .fill(
+                DateFormattingUtility.statusColor(for: activity.activityStatusName)
+)
+            .frame(width: 12, height: 12)
     }
 }
 

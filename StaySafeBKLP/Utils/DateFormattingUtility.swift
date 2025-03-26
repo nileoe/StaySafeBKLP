@@ -51,9 +51,12 @@ struct DateFormattingUtility {
     static func formatISOString(_ isoString: String, style: DateFormatter = mediumDateTime)
         -> String
     {
+        print("string input: \(isoString)")
         guard let date = iso8601WithMilliseconds.date(from: isoString) else {
+            print("returning unknown time")
             return "Unknown time"
         }
+        print("returning \(style.string(from: date))")
         return style.string(from: date)
     }
 
