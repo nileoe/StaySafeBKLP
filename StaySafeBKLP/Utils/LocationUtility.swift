@@ -112,6 +112,15 @@ class LocationUtility {
         return "Current Location"
     }
 
+    /// Extract a simplified location name from a full address
+    /// - Parameter address: Full address string (e.g., "101 Riverview Road, Riverview Road, Epsom, England")
+    /// - Returns: A simplified location name (e.g., "Riverview Road")
+    static func extractSimplifiedLocationName(from address: String) -> String {
+        let comps = address.components(separatedBy: ", ").filter { !$0.isEmpty }
+        guard !comps.isEmpty else { return "Location" }
+        return comps.count > 1 && comps[0].first?.isNumber == true ? comps[1] : comps[0]
+    }
+
     static func fetchPostcode(latitude: CLLocationDegrees, longitude: CLLocationDegrees) async
         -> String?
     {
@@ -209,10 +218,23 @@ class LocationUtility {
                 longitude: coordinates.longitude
             ) ?? "XXX XXX"  // Restore the fallback value which the API might expect
 
+        var locationName = name
+        if name.contains(",") || (name.count > 30 && address.count > 5) {
+            locationName = extractSimplifiedLocationName(from: address.isEmpty ? name : address)
+            if locationName.count < 5,
+                let locality =
+                    (await reverseGeocode(
+                        latitude: coordinates.latitude, longitude: coordinates.longitude))
+                    .placemark?.locality
+            {
+                locationName += " in \(locality)"
+            }
+        }
+
         // Create location object
         let newLocation = Location(
             locationID: 1,  // Server will assign the real ID - keep this as 1 for API compatibility
-            locationName: name.prefix(60).description,  // Keep length limitation
+            locationName: locationName.prefix(60).description,  // Keep length limitation
             locationDescription: description?.prefix(100).description
                 ?? "Location created automatically",
             locationAddress: address.isEmpty ? "Address unavailable" : address,  // Ensure address isn't empty
@@ -221,7 +243,7 @@ class LocationUtility {
             locationLongitude: coordinates.longitude
         )
 
-        print("Creating new location: \(name) with address: \(address)")
+        print("Creating new location: \(locationName) with address: \(address)")
 
         do {
             let createdLocation = try await apiService.createLocation(location: newLocation)
