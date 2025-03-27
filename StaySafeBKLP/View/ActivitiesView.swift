@@ -6,7 +6,7 @@ struct ActivitiesView: View {
     
     @State private var userActivities: [Activity] = []
     @State private var contactsActivities: [Activity] = []
-    @State private var contactDetails: [ContactDetail] = [] // TODO remove along with associated methods
+    @State private var contacts: [ContactDetail] = []
     
     @State private var activeActivities: [Activity] = []
     @State private var plannedActivities: [Activity] = []
@@ -14,7 +14,7 @@ struct ActivitiesView: View {
     
     @State private var showContactActivities: Bool = true
     @State private var locationsByActivityIDs: [Int:Location] = [:]
-    @State private var contactByActivityIDs: [Int:ContactDetail] = [:]
+    @State private var usersByActivityIDs: [Int:User] = [:]
 
     var body: some View {
         NavigationView {
@@ -43,6 +43,7 @@ struct ActivitiesView: View {
                         activities: activeActivities,
                         noActivitiesMessage: "No active trips",
                         locationsByIDs: locationsByActivityIDs,
+                        userByIDs:usersByActivityIDs,
                         showContactView: showContactActivities
                     )
                     ActivitiesSection(
@@ -50,6 +51,7 @@ struct ActivitiesView: View {
                         activities: plannedActivities,
                         noActivitiesMessage: "No planned trips",
                         locationsByIDs: locationsByActivityIDs,
+                        userByIDs:usersByActivityIDs,
                         showContactView: showContactActivities
                     )
                     ActivitiesSection(
@@ -57,13 +59,14 @@ struct ActivitiesView: View {
                         activities: completedOrCancelledActivities,
                         noActivitiesMessage: "No past trips",
                         locationsByIDs: locationsByActivityIDs,
+                        userByIDs:usersByActivityIDs,
                         showContactView: showContactActivities
                     )
                 }
                 .task {
                     await loadData()
                 }
-                .navigationTitle("My Trips")
+                .navigationTitle("Trips")
             }
         }
     }
@@ -75,25 +78,38 @@ struct ActivitiesView: View {
             activeActivities = selectedActivities.filter({ $0.hasStarted() || $0.isPaused() })
     }
     
-    private func loadLocations() async {
-        for activity in userActivities {
-            do {
+    private func loadLocationsDict() async {
+        do {
+            for activity in userActivities {
                 locationsByActivityIDs[activity.activityID] = try await apiService
                     .getLocation(id: String(activity.activityToID))
-            } catch {
-                print("Error fetching location: \(error.localizedDescription)")
             }
             for activity in contactsActivities {
-                do {
-                    locationsByActivityIDs[activity.activityID] = try await apiService
-                        .getLocation(id: String(activity.activityToID))
-                } catch {
-                    print("Error fetching location: \(error.localizedDescription)")
-                }
+                locationsByActivityIDs[activity.activityID] = try await apiService
+                    .getLocation(id: String(activity.activityToID))
             }
+        }
+        catch {
+            print("Error fetching location: \(error.localizedDescription)")
         }
     }
     
+    private func loadContactsDict() async {
+        do {
+            for activity in userActivities {
+                usersByActivityIDs[activity.activityID] = try await apiService
+                    .getUser(id: String(activity.activityUserID))
+            }
+            for activity in contactsActivities {
+                usersByActivityIDs[activity.activityID] = try await apiService
+                    .getUser(id: String(activity.activityUserID))
+            }
+        }
+        catch {
+            print("Error fetching user: \(error.localizedDescription)")
+        }
+    }
+
     private func loadData() async {
         guard let user = userContext.currentUser else {
             print("Error: No current user found.")
@@ -112,12 +128,13 @@ struct ActivitiesView: View {
             print("Unexpected error when fetching contacts activities: \(error)")
         }
         do {
-            contactDetails = try await apiService
+            contacts = try await apiService
                 .getContacts(userID: String(user.userID))
         } catch {
             print("Unexpected error when fetching contacts: \(error)")
         }
-        await loadLocations()
+        await loadLocationsDict()
+        await loadContactsDict()
         handleTripSelection(useContactActivities: true)
     }
 }
@@ -126,7 +143,8 @@ struct ActivitiesSection: View {
     let sectionTitle: String
     let activities: [Activity]
     let noActivitiesMessage: String
-    var locationsByIDs: [Int:Location]
+    let locationsByIDs: [Int:Location]
+    let userByIDs: [Int:User]
     let  showContactView: Bool
     
     var body: some View {
@@ -146,9 +164,10 @@ struct ActivitiesSection: View {
                         activity: activity,
                         location: locationsByIDs[activity.activityID],
                         displayMode: showContactView ? .contact: .banner,
-                        contactName: activity.activityUsername,
-                        contactImageURL: nil,
-                        onCardTap: {},
+                        contactName: userByIDs[activity.activityID]?.fullName,
+                        contactImageURL: userByIDs[activity.activityID]?.userImageURL,
+                        onCardTap: {
+                        },
                         onViewTrip: nil,
                         onEndTrip: nil
                     )

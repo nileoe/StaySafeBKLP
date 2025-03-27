@@ -132,12 +132,6 @@ class StaySafeAPIService {
             }
         }
         return contactsActivities
-//
-//        for contact in userContacts {
-//            let contactActivities: [Activity] = try await getActivities(userID: String(contact.userID))
-//            activities.append(contentsOf: contactActivities)
-//        }
-//        return activities
     }
 
     /// Fetch a specific activity by ID
