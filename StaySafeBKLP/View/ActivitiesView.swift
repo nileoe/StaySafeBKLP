@@ -3,71 +3,99 @@ import SwiftUI
 struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
     @EnvironmentObject var userContext: UserContext
-
+    
     @State private var loggedInUserActivities: [Activity] = []
     @State private var activeActivities: [Activity] = []
     @State private var plannedActivities: [Activity] = []
-    @State private var completedActivities: [Activity] = []
+    @State private var completedOrCancelledActivities: [Activity] = []
     @State private var showLoggedInUserActivitiesOnly: Bool = false
-
-    private var displayedActivities: [Activity] {
-        return showLoggedInUserActivitiesOnly ? loggedInUserActivities : [] // todo
-    }
-
+    
     var body: some View {
         NavigationView {
-            VStack {
-                Toggle(isOn: $showLoggedInUserActivitiesOnly) {
-                    Text("Show my trips only")
-                }
-                .padding(.horizontal)
-                .padding(.top)
-                WideRectangleIconButton(
-                    text: "Plan a new Trip",
-                    backgroundColor: .blue,
-                    foregroundColor: .white,
-                    action: {print("ok")},
-                    imageName: "plus"
-                )
-                
-                ActivitiesSection(
-                    sectionTitle: "Active Trips",
-                    activities: activeActivities
-                )
-                // ################################################################################################
-                List(displayedActivities, id: \.id) { activity in
-                    NavigationLink(
-                        destination: ActivityView(
-                            activity: activity,
-                            viewTitle: "Trip Details"
-                        ),
-                        label: {
-                            ActivityCard(activity: activity)
-                        }
+            ScrollView {
+                VStack {
+                    Toggle(isOn: $showLoggedInUserActivitiesOnly) {
+                        Text("Show my trips only")
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                    WideRectangleIconButton(
+                        text: "Plan a new Trip",
+                        backgroundColor: .blue,
+                        foregroundColor: .white,
+                        action: {print("ok")},
+                        imageName: "plus"
                     )
+                    
+                    ActivitiesSection(
+                        sectionTitle: "Active Trips",
+                        activities: activeActivities,
+                        noActivitiesMessage: "No active trips"
+                    )
+                    ActivitiesSection(
+                        sectionTitle: "Planned Trips",
+                        activities: plannedActivities,
+                        noActivitiesMessage: "No planned trips"
+                    )
+                    ActivitiesSection(
+                        sectionTitle: "Past Trips",
+                        activities: completedOrCancelledActivities,
+                        noActivitiesMessage: "No past trips"
+                    )
+                    .task {
+                        await loadActivities()
+                    }
+                    .navigationTitle("My Trips")
                 }
-                .task {
-                    await loadActivities()
-                }
-                .navigationTitle("My Trips")
             }
         }
     }
-
+    
     private func loadActivities() async {
         guard let user = userContext.currentUser else {
             print("Error: No current user found.")
             return
         }
-
+        
         do {
             loggedInUserActivities = try await apiService.getActivities(userID: String(user.userID))
         } catch {
             print("Unexpected error when fetching activities: \(error)")
         }
         plannedActivities = loggedInUserActivities.filter({ $0.isPlanned() })
-        completedActivities = loggedInUserActivities.filter({ $0.isCompleted() })
+        completedOrCancelledActivities = loggedInUserActivities .filter({ $0.isCompleted() || $0.isCancelled() })
         activeActivities = loggedInUserActivities.filter({ $0.hasStarted() || $0.isPaused() })
+    }
+}
+
+struct ActivitiesSection: View {
+    let sectionTitle: String
+    let activities: [Activity]
+    let noActivitiesMessage: String
+    var body: some View {
+        Text(sectionTitle)
+            .font(.headline)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        if (activities.isEmpty) {
+            Text(noActivitiesMessage)
+                .font(.callout)
+                .italic()
+                .foregroundColor(.gray)
+        } else {
+            LazyVStack(spacing: 12) { // Use LazyVStack instead of List
+                ForEach(activities, id: \.id) { activity in
+                    NavigationLink {
+                        ActivityView(
+                            activity: activity,
+                            viewTitle: "Trip Details"
+                        )
+                    } label: {
+                        ActivityCard(activity: activity)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -121,27 +149,6 @@ struct ActivityCard: View {
                 DateFormattingUtility.statusColor(for: activity.activityStatusName)
 )
             .frame(width: 12, height: 12)
-    }
-}
-
-struct ActivitiesSection: View {
-    let sectionTitle: String
-    let activities: [Activity]
-    var body: some View {
-        Text(sectionTitle)
-            .font(.headline)
-            .padding(.top, 10)
-        List(activities, id: \.id) { activity in
-            NavigationLink(
-                destination: ActivityView(
-                    activity: activity,
-                    viewTitle: "Trip Details"
-                ),
-                label: {
-                    ActivityCard(activity: activity)
-                }
-            )
-        }
     }
 }
 
