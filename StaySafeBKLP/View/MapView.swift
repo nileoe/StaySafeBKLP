@@ -63,17 +63,12 @@ struct MapView: View {
                             }
                             .padding(.trailing, 20)
                         }
-
-                        Button(action: { showingNewTripView = true }) {
-                            Text("Create Trip")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.blue)
-                                .cornerRadius(12)
-                                .padding(.horizontal, 20)
-                        }
+                        WideRectangleButton(
+                            text: "Create Trip",
+                            backgroundColor: .blue,
+                            foregroundColor: .white,
+                            action: { showingNewTripView = true }
+                        )
                     }
                     .padding(.bottom, 20)
                 }

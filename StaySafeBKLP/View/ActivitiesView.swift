@@ -19,7 +19,13 @@ struct ActivitiesView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top)
-
+                WideRectangleIconButton(
+                    text: "Plan a new Trip",
+                    backgroundColor: .blue,
+                    foregroundColor: .white,
+                    action: {print("ok")},
+                    imageName: "plus"
+                )
                 List(displayedActivities, id: \.id) { activity in
                     NavigationLink(
                         destination: ActivityView(
