@@ -162,7 +162,11 @@ class StaySafeAPIService {
 
     /// Fetch a specific location by ID
     func getLocation(id: String) async throws -> Location {
-        return try await getSingleFromArray(endpoint: "locations/\(id)")
+        print("GET LOCATION API with id \(id)")
+        //        return try await getSingleFromArray(endpoint: "locations/\(id)")
+        let location: Location = try await getSingleFromArray(endpoint: "locations/\(id)")
+        print("got \(location.locationName)")
+        return location
     }
 
     /// Create a new location

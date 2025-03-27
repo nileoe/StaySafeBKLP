@@ -151,21 +151,6 @@ struct ContactDetailView: View {
         }
     }
 }
-//struct ContactDisplay: View {
-//    let contact: Contact
-//    var body: some View {
-//        VStack {
-//            ProfileImage(imageURL: contact.userImageURL)
-////            UserInfoSection(user: user)
-//            UserInfoSection(
-//                fullName: user.fullName,
-//                username: user.userUsername,
-//                phone: user.userPhone
-//            )
-//                .padding(.top, 40)
-//        }
-//    }
-//}
 
 #Preview {
     ContactsView()

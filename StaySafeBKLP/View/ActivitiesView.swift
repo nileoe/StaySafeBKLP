@@ -9,6 +9,7 @@ struct ActivitiesView: View {
     @State private var plannedActivities: [Activity] = []
     @State private var completedOrCancelledActivities: [Activity] = []
     @State private var showLoggedInUserActivitiesOnly: Bool = false
+    @State private var locationsByActivityIDs: [Int:Location] = [:]
     
     var body: some View {
         NavigationView {
@@ -20,7 +21,7 @@ struct ActivitiesView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
-                    .padding(.top)
+                    .padding(.vertical)
                     WideRectangleIconButton(
                         text: "Plan a new Trip",
                         backgroundColor: .blue,
@@ -32,24 +33,52 @@ struct ActivitiesView: View {
                     ActivitiesSection(
                         sectionTitle: "Active Trips",
                         activities: activeActivities,
-                        noActivitiesMessage: "No active trips"
+                        noActivitiesMessage: "No active trips",
+                        locationsByIDs: locationsByActivityIDs
                     )
                     ActivitiesSection(
                         sectionTitle: "Planned Trips",
                         activities: plannedActivities,
-                        noActivitiesMessage: "No planned trips"
+                        noActivitiesMessage: "No planned trips",
+                        locationsByIDs: locationsByActivityIDs
                     )
                     ActivitiesSection(
                         sectionTitle: "Past Trips",
                         activities: completedOrCancelledActivities,
-                        noActivitiesMessage: "No past trips"
+                        noActivitiesMessage: "No past trips",
+                        locationsByIDs: locationsByActivityIDs
                     )
                     .task {
                         await loadActivities()
+                        await loadLocations()
                     }
                     .navigationTitle("My Trips")
                 }
             }
+        }
+    }
+    
+    private func loadLocations() async {
+        for activity in loggedInUserActivities {
+            do {
+            locationsByActivityIDs[activity.activityID] = try await apiService
+                .getLocation(id: String(activity.activityToID))
+                print("FILLING IN LOCATIONS")
+                print(
+                    "Loaded location \(locationsByActivityIDs[activity.activityID]?.locationName ?? "no location") for activity \(activity.activityName)"
+                )
+                try await Task.sleep(nanoseconds: 1_000_000_000) // 1-second delay
+            } catch {
+                print("Error fetching location: \(error.localizedDescription)")
+            }
+            print("current dictionary state:")
+            print()
+            for (key, value) in locationsByActivityIDs {
+                print(
+                    "\(key): \(value.locationName) (\(value.locationDescription))"
+                )
+            }
+            print()
         }
     }
     
@@ -74,6 +103,7 @@ struct ActivitiesSection: View {
     let sectionTitle: String
     let activities: [Activity]
     let noActivitiesMessage: String
+    var locationsByIDs: [Int:Location]
     var body: some View {
         Text(sectionTitle)
             .font(.headline)
@@ -93,7 +123,17 @@ struct ActivitiesSection: View {
                             viewTitle: "Trip Details"
                         )
                     } label: {
-                        ActivityCard(activity: activity)
+//                        ActivityCard(activity: activity)
+                        UniversalActivityCard(
+                            activity: activity,
+                            location: locationsByIDs[activity.activityID],
+                            displayMode: .banner,
+                            contactName: nil,
+                            contactImageURL: nil,
+                            onCardTap: {},
+                            onViewTrip: nil,
+                            onEndTrip: nil
+                        )
                     }
                 }
             }
