@@ -14,7 +14,8 @@ struct ActivitiesView: View {
     
     @State private var showContactActivities: Bool = true
     @State private var locationsByActivityIDs: [Int:Location] = [:]
-    
+    @State private var contactByActivityIDs: [Int:ContactDetail] = [:]
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -25,7 +26,7 @@ struct ActivitiesView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .onChange(of: showContactActivities) { newValue in // TODO depracated
-                        handlePickerSelection(newValue)
+                        handleTripSelection(useContactActivities: newValue)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
@@ -60,27 +61,20 @@ struct ActivitiesView: View {
                     )
                 }
                 .task {
-                    await loadActivities()
-                    await loadContactActivities()
-                    await loadLocations()
-                    //                    await loadContactDetails()
+                    await loadData()
                 }
                 .navigationTitle("My Trips")
             }
         }
     }
     
-    private func handlePickerSelection(_ includeContactsActivities: Bool) {
-        if includeContactsActivities {
-            plannedActivities = contactsActivities.filter({ $0.isPlanned() })
-            completedOrCancelledActivities = contactsActivities .filter({ $0.isCompleted() || $0.isCancelled() })
-            activeActivities = contactsActivities.filter({ $0.hasStarted() || $0.isPaused() })
-        } else {
-            plannedActivities = userActivities.filter({ $0.isPlanned() })
-            completedOrCancelledActivities = userActivities .filter({ $0.isCompleted() || $0.isCancelled() })
-            activeActivities = userActivities.filter({ $0.hasStarted() || $0.isPaused() })
-        }
+    private func handleTripSelection(useContactActivities: Bool) {
+        let selectedActivities: [Activity] = useContactActivities ? contactsActivities : userActivities
+        plannedActivities = selectedActivities.filter({ $0.isPlanned() })
+            completedOrCancelledActivities = selectedActivities.filter({ $0.isCompleted() || $0.isCancelled() })
+            activeActivities = selectedActivities.filter({ $0.hasStarted() || $0.isPaused() })
     }
+    
     private func loadLocations() async {
         for activity in userActivities {
             do {
@@ -100,75 +94,31 @@ struct ActivitiesView: View {
         }
     }
     
-    private func loadActivities() async {
+    private func loadData() async {
         guard let user = userContext.currentUser else {
             print("Error: No current user found.")
             return
         }
-        
         do {
             userActivities = try await apiService.getActivities(userID: String(user.userID))
         } catch {
-            print("Unexpected error when fetching activities: \(error)")
+            print("Unexpected error when fetching user activities: \(error)")
         }
-        plannedActivities = userActivities.filter({ $0.isPlanned() })
-        completedOrCancelledActivities = userActivities .filter({ $0.isCompleted() || $0.isCancelled() })
-        activeActivities = userActivities.filter({ $0.hasStarted() || $0.isPaused() })
-    }
-    private func loadContactDetails() async {
-        guard let user = userContext.currentUser else {
-            print("Error: No current user found.")
-            return
+        do {
+            contactsActivities = try await apiService.getContactsActivities(
+                userID: String(user.userID)
+            )
+        } catch {
+            print("Unexpected error when fetching contacts activities: \(error)")
         }
-        
         do {
             contactDetails = try await apiService
                 .getContacts(userID: String(user.userID))
         } catch {
             print("Unexpected error when fetching contacts: \(error)")
         }
-        print("PRINTING LSiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-        print(contactDetails)
-    }
-    
-    private func loadContactActivities() async {
-        guard let user = userContext.currentUser else {
-            print("Error: No current user found.")
-            return
-        }
-        do {
-            contactsActivities = try await apiService.getContactsActivities(
-                userID: String(user.userID)
-            )
-            print("PRINTING CONTACT ACTIVITIES")
-            for activity in contactsActivities {
-                print("\(activity.activityName)")
-            }
-        } catch {
-            print("Unexpected error when fetching activities: \(error)")
-        }
-    }
-}
-
-struct _ContactsTripView: View {
-    let contacts: [ContactDetail]
-    var body: some View {
-        LazyVStack(spacing: 12) {
-            ForEach(contacts, id: \.id) { contact in
-                Text(contact.userContactLabel)
-                
-                //                    UniversalActivityCard(
-                //                        activity: activity,
-                //                        location: locationsByIDs[activity.activityID],
-                //                        displayMode: .banner,
-                //                        contactName: nil,
-                //                        contactImageURL: nil,
-                //                        onCardTap: {},
-                //                        onViewTrip: nil,
-                //                        onEndTrip: nil
-                //                    )
-            }
-        }
+        await loadLocations()
+        handleTripSelection(useContactActivities: true)
     }
 }
 
@@ -196,7 +146,7 @@ struct ActivitiesSection: View {
                         activity: activity,
                         location: locationsByIDs[activity.activityID],
                         displayMode: showContactView ? .contact: .banner,
-                        contactName: nil,
+                        contactName: activity.activityUsername,
                         contactImageURL: nil,
                         onCardTap: {},
                         onViewTrip: nil,
@@ -206,59 +156,6 @@ struct ActivitiesSection: View {
                 }
             }
         }
-    }
-}
-
-struct ActivityCard: View {
-    
-    var activity: Activity
-    private var departureTimeString: String {
-        guard let departureLocation = activity.activityFromName else {
-            return "Unknown location"
-        }
-        let departureTimeString = DateFormattingUtility.formatISOString(activity.activityLeave)
-        return "From \(departureLocation) at \(departureTimeString)"
-    }
-    
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            statusIndicator
-            VStack(alignment: .leading, spacing: 4) {
-                Text(activity.activityName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .foregroundColor(.green)
-                    Text(departureTimeString)
-                        .font(.caption)
-                }
-                
-                if let fromLocation = activity.activityFromName {
-                    Text(fromLocation)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Spacer()
-            
-        }
-        .padding(12)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-    
-    private var statusIndicator: some View {
-        Circle()
-            .fill(
-                DateFormattingUtility.statusColor(for: activity.activityStatusName)
-            )
-            .frame(width: 12, height: 12)
     }
 }
 
