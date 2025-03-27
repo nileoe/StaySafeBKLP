@@ -16,7 +16,9 @@ struct UIKitMapView: UIViewRepresentable {
     func updateUIView(_ uiView: MKMapView, context: Context) {
         if followUser {
             uiView.setRegion(region, animated: true)
-            followUser = false
+            DispatchQueue.main.async {
+                followUser = false
+            }
         }
     }
 
