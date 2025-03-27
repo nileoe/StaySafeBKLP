@@ -81,4 +81,22 @@ struct DateFormattingUtility {
             return .gray
         }
     }
+
+    /// Format a date with optional time (e.g., "Apr 3" or "Apr 3, 2023")
+    static func formatDate(
+        _ date: Date, style: DateFormatter.Style = .medium, includeTime: Bool = false
+    ) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = style
+        formatter.timeStyle = includeTime ? .short : .none
+        return formatter.string(from: date)
+    }
+
+    /// Format just the time component of a date (e.g., "1:12 PM")
+    static func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
 }
