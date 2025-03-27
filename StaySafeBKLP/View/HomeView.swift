@@ -21,14 +21,20 @@ struct HomeView: View {
                     // Header Section
                     HomeHeaderSection(hasActiveTrip: hasActiveTrip)
 
-                    // Trip card using components
+                    // Trip card using universal component
                     if let activeTrip = activities.first(where: {
                         $0.activityStatusID == ActivityStatus.started.rawValue
+                            || $0.activityStatusID == ActivityStatus.paused.rawValue
                     }) {
-                        ActiveTripCard(
-                            trip: activeTrip,
+                        UniversalActivityCard(
+                            activity: activeTrip,
                             location: locationData[activeTrip.activityToID],
-                            onViewTrip: { selectedActivity = activeTrip }
+                            displayMode: .home,
+                            contactName: nil,
+                            contactImageURL: nil,
+                            onCardTap: { selectedActivity = activeTrip },
+                            onViewTrip: { selectedActivity = activeTrip },
+                            onEndTrip: nil
                         )
                         .task {
                             if locationData[activeTrip.activityToID] == nil {
