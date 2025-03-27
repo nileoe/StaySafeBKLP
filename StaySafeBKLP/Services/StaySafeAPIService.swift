@@ -86,6 +86,19 @@ class StaySafeAPIService {
     func getAllActivities() async throws -> [Activity] {
         return try await apiService.get(endpoint: "activities")
     }
+    
+    /// Fetch a user's contact's activities
+    func getContactsActivities(userID: String) async throws -> [Activity] {
+        let userContacts = try await getContacts(userID: userID)
+        var activities: [Activity] = []
+        for contact in userContacts {
+            let contactActivities: [Activity] = try await getActivities(userID: String(contact.userID))
+            for activity in contactActivities {
+                activities.append(activity)
+            }
+        }
+        return activities
+    }
 
     /// Fetch a specific activity by ID
     func getActivity(id: String) async throws -> Activity {

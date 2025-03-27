@@ -4,23 +4,23 @@ struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
     @EnvironmentObject var userContext: UserContext
 
-    @State private var activities: [Activity] = []
-    @State private var showCurrentActivitiesOnly: Bool = true
+    @State private var loggedInUserActivities: [Activity] = []
+    @State private var showLoggedInUserActivitiesOnly: Bool = false
 
-    private var filteredActivities: [Activity] {
-        return showCurrentActivitiesOnly ? activities.filter { $0.isCurrent() } : activities
+    private var displayedActivities: [Activity] {
+        return showLoggedInUserActivitiesOnly ? loggedInUserActivities : [] // todo
     }
 
     var body: some View {
         NavigationView {
             VStack {
-                Toggle(isOn: $showCurrentActivitiesOnly) {
-                    Text("Show current trips only")
+                Toggle(isOn: $showLoggedInUserActivitiesOnly) {
+                    Text("Show my trips only")
                 }
                 .padding(.horizontal)
                 .padding(.top)
 
-                List(filteredActivities, id: \.id) { activity in
+                List(displayedActivities, id: \.id) { activity in
                     NavigationLink(
                         destination: ActivityView(
                             activity: activity,
@@ -46,7 +46,7 @@ struct ActivitiesView: View {
         }
 
         do {
-            activities = try await apiService.getActivities(userID: String(user.userID))
+            loggedInUserActivities = try await apiService.getActivities(userID: String(user.userID))
         } catch {
             print("Unexpected error when fetching activities: \(error)")
         }
