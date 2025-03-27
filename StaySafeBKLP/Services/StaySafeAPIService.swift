@@ -121,15 +121,23 @@ class StaySafeAPIService {
     
     /// Fetch a user's contact's activities
     func getContactsActivities(userID: String) async throws -> [Activity] {
-        let userContacts = try await getContacts(userID: userID)
-        var activities: [Activity] = []
+        let userContacts: [ContactDetail] = try await getContacts(userID: userID)
+        let activities: [Activity] = try await getAllActivities()
+        var contactsActivities: [Activity] = []
         for contact in userContacts {
-            let contactActivities: [Activity] = try await getActivities(userID: String(contact.userID))
-            for activity in contactActivities {
-                activities.append(activity)
+            for activity in activities {
+                if (activity.activityUserID == contact.userID) {
+                    contactsActivities.append(activity)
+                }
             }
         }
-        return activities
+        return contactsActivities
+//
+//        for contact in userContacts {
+//            let contactActivities: [Activity] = try await getActivities(userID: String(contact.userID))
+//            activities.append(contentsOf: contactActivities)
+//        }
+//        return activities
     }
 
     /// Fetch a specific activity by ID
@@ -162,11 +170,7 @@ class StaySafeAPIService {
 
     /// Fetch a specific location by ID
     func getLocation(id: String) async throws -> Location {
-        print("GET LOCATION API with id \(id)")
-        //        return try await getSingleFromArray(endpoint: "locations/\(id)")
-        let location: Location = try await getSingleFromArray(endpoint: "locations/\(id)")
-        print("got \(location.locationName)")
-        return location
+        return try await getSingleFromArray(endpoint: "locations/\(id)")
     }
 
     /// Create a new location
