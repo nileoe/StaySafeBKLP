@@ -113,4 +113,17 @@ class MapViewController: ObservableObject {
         currentRoute = nil
         destinationCoordinate = nil
     }
+
+    func checkForActiveTrip() {
+        guard let currentUserID = UserContext.shared.currentUser?.userID else { return }
+
+        Task { @MainActor in
+            do {
+                let activities = try await apiService.getActivities(userID: String(currentUserID))
+                activities.first(where: { $0.activityStatusID == 2 }).map(handleActivityCreated)
+            } catch {
+                print("Error fetching active trips: \(error.localizedDescription)")
+            }
+        }
+    }
 }
