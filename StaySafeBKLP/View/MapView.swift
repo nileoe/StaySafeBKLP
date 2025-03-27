@@ -76,6 +76,7 @@ struct MapView: View {
             .navigationTitle("Map")
             .onAppear {
                 controller.setInitialLocation(locationManager.userLocation)
+                controller.checkForActiveTrip()  // Add check for active trips when view appears
             }
             .sheet(isPresented: $showingNewTripView) {
                 NewTripView(onActivityCreated: { activity in

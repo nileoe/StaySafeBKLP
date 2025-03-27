@@ -26,22 +26,7 @@ struct LoginView: View {
                 Spacer()
 
                 // Logo and heading
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.blue, Color.purple]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .mask(
-                    Image(systemName: "shield.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 60, height: 60)
-                )
-                .frame(width: 60, height: 60)
-                .shadow(
-                    color: Color.primary.opacity(colorScheme == .dark ? 0.3 : 0.05),
-                    radius: 3, x: 0, y: 2
-                )
+                StaySafeLogo(size: 60, shadowRadius: 3, shadowOpacity: 0.05)
 
                 Text("StaySafe™")
                     .font(.title)

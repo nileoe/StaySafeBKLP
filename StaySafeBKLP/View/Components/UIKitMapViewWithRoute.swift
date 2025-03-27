@@ -22,7 +22,9 @@ struct UIKitMapViewWithRoute: UIViewRepresentable {
     func updateUIView(_ mapView: MKMapView, context: Context) {
         if followUser {
             mapView.setRegion(region, animated: true)
-            followUser = false
+            DispatchQueue.main.async {
+                followUser = false
+            }
         }
 
         // Remove existing overlays
