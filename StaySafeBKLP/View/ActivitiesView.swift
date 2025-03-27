@@ -5,6 +5,9 @@ struct ActivitiesView: View {
     @EnvironmentObject var userContext: UserContext
 
     @State private var loggedInUserActivities: [Activity] = []
+    @State private var activeActivities: [Activity] = []
+    @State private var plannedActivities: [Activity] = []
+    @State private var completedActivities: [Activity] = []
     @State private var showLoggedInUserActivitiesOnly: Bool = false
 
     private var displayedActivities: [Activity] {
@@ -26,6 +29,12 @@ struct ActivitiesView: View {
                     action: {print("ok")},
                     imageName: "plus"
                 )
+                
+                ActivitiesSection(
+                    sectionTitle: "Active Trips",
+                    activities: activeActivities
+                )
+                // ################################################################################################
                 List(displayedActivities, id: \.id) { activity in
                     NavigationLink(
                         destination: ActivityView(
@@ -56,6 +65,9 @@ struct ActivitiesView: View {
         } catch {
             print("Unexpected error when fetching activities: \(error)")
         }
+        plannedActivities = loggedInUserActivities.filter({ $0.isPlanned() })
+        completedActivities = loggedInUserActivities.filter({ $0.isCompleted() })
+        activeActivities = loggedInUserActivities.filter({ $0.hasStarted() || $0.isPaused() })
     }
 }
 
@@ -109,6 +121,27 @@ struct ActivityCard: View {
                 DateFormattingUtility.statusColor(for: activity.activityStatusName)
 )
             .frame(width: 12, height: 12)
+    }
+}
+
+struct ActivitiesSection: View {
+    let sectionTitle: String
+    let activities: [Activity]
+    var body: some View {
+        Text(sectionTitle)
+            .font(.headline)
+            .padding(.top, 10)
+        List(activities, id: \.id) { activity in
+            NavigationLink(
+                destination: ActivityView(
+                    activity: activity,
+                    viewTitle: "Trip Details"
+                ),
+                label: {
+                    ActivityCard(activity: activity)
+                }
+            )
+        }
     }
 }
 
