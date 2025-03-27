@@ -136,6 +136,31 @@ class LocationUtility {
         return formattedAddress(from: placemark)
     }
 
+    /// Extract a cleaned description from a full address by removing redundant parts
+    /// - Parameter address: Full address string (e.g., "9 Colne Court, Colne Court, Chessington, England")
+    /// - Returns: A cleaned description (e.g., "9 Colne Court, Chessington, England")
+    static func extractLocationDescription(from address: String) -> String {
+        let components = address.components(separatedBy: ", ").filter { !$0.isEmpty }
+        guard components.count > 2 else { return address }
+
+        var result = [components[0]]  // Keep the first part (usually house number + street)
+
+        // Skip any component that's the same as the second part of the first component
+        // For example, if first part is "9 Colne Court", skip any "Colne Court" components
+        let firstPartElements = components[0].components(separatedBy: " ")
+        let streetName =
+            firstPartElements.count > 1 ? firstPartElements.dropFirst().joined(separator: " ") : ""
+
+        // Add remaining components except those matching the street name
+        for i in 1..<components.count {
+            if components[i] != streetName {
+                result.append(components[i])
+            }
+        }
+
+        return result.joined(separator: ", ")
+    }
+
     // MARK: - Location Search
 
     /// Find a location in the database that matches the given coordinates within a radius
@@ -231,11 +256,17 @@ class LocationUtility {
             }
         }
 
+        // Create a better description if none provided
+        var locationDescription = description
+        if locationDescription == nil || locationDescription == "Destination for trip" {
+            locationDescription = extractLocationDescription(from: address)
+        }
+
         // Create location object
         let newLocation = Location(
             locationID: 1,  // Server will assign the real ID - keep this as 1 for API compatibility
             locationName: locationName.prefix(60).description,  // Keep length limitation
-            locationDescription: description?.prefix(100).description
+            locationDescription: locationDescription?.prefix(100).description
                 ?? "Location created automatically",
             locationAddress: address.isEmpty ? "Address unavailable" : address,  // Ensure address isn't empty
             locationPostcode: postcode,

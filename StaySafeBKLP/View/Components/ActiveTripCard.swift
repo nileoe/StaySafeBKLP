@@ -29,7 +29,7 @@ struct ActiveTripCard: View {
                     Text(location?.locationName ?? trip.activityToName ?? "Unknown location")
                         .font(.title3).fontWeight(.bold)
 
-                    Text(location?.locationAddress ?? "Address loading...")
+                    Text(location?.locationDescription ?? "Address loading...")
                         .font(.subheadline).lineLimit(1)
 
                     Text(
