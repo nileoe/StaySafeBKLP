@@ -81,10 +81,55 @@ class StaySafeAPIService {
     func getActivities(userID: String) async throws -> [Activity] {
         return try await apiService.get(endpoint: "activities/users/\(userID)")
     }
+    
+    func getCurrentUserActivity(for userID: String) async throws -> Activity? {
+        let userActivities = try await getActivities(userID: userID)
+        for activity in userActivities {
+            if activity.hasStarted() || activity.isPaused() {
+                return activity
+            }
+        }
+        return nil
+    }
+    
+    func getPlannedUserActivities(for userID: String) async throws -> [Activity] {
+        var plannedActivities: [Activity] = []
+        let userActivities = try await getActivities(userID: userID)
+        for activity in userActivities {
+            if activity.isPlanned() {
+                plannedActivities.append(activity)
+            }
+        }
+        return plannedActivities
+    }
+    
+    func getCompletedUserActivities(for userID: String) async throws -> [Activity] {
+        var completedActivities: [Activity] = []
+        let userActivities = try await getActivities(userID: userID)
+        for activity in userActivities {
+            if activity.isCompleted() {
+                completedActivities.append(activity)
+            }
+        }
+        return completedActivities
+    }
 
     /// Fetch all activities
     func getAllActivities() async throws -> [Activity] {
         return try await apiService.get(endpoint: "activities")
+    }
+    
+    /// Fetch a user's contact's activities
+    func getContactsActivities(userID: String) async throws -> [Activity] {
+        let userContacts = try await getContacts(userID: userID)
+        var activities: [Activity] = []
+        for contact in userContacts {
+            let contactActivities: [Activity] = try await getActivities(userID: String(contact.userID))
+            for activity in contactActivities {
+                activities.append(activity)
+            }
+        }
+        return activities
     }
 
     /// Fetch a specific activity by ID

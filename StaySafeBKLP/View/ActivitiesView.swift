@@ -3,52 +3,98 @@ import SwiftUI
 struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
     @EnvironmentObject var userContext: UserContext
-
-    @State private var activities: [Activity] = []
-    @State private var showCurrentActivitiesOnly: Bool = true
-
-    private var filteredActivities: [Activity] {
-        return showCurrentActivitiesOnly ? activities.filter { $0.isCurrent() } : activities
-    }
-
+    
+    @State private var loggedInUserActivities: [Activity] = []
+    @State private var activeActivities: [Activity] = []
+    @State private var plannedActivities: [Activity] = []
+    @State private var completedOrCancelledActivities: [Activity] = []
+    @State private var showLoggedInUserActivitiesOnly: Bool = false
+    
     var body: some View {
         NavigationView {
-            VStack {
-                Toggle(isOn: $showCurrentActivitiesOnly) {
-                    Text("Show current trips only")
-                }
-                .padding(.horizontal)
-                .padding(.top)
-
-                List(filteredActivities, id: \.id) { activity in
-                    NavigationLink(
-                        destination: ActivityView(
-                            activity: activity,
-                            viewTitle: "Trip Details"
-                        ),
-                        label: {
-                            ActivityCard(activity: activity)
-                        }
+            ScrollView {
+                VStack {
+                    Toggle(isOn: $showLoggedInUserActivitiesOnly) {
+                        Text("Show my trips only")
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                    WideRectangleIconButton(
+                        text: "Plan a new Trip",
+                        backgroundColor: .blue,
+                        foregroundColor: .white,
+                        action: {print("ok")},
+                        imageName: "plus"
                     )
+                    
+                    ActivitiesSection(
+                        sectionTitle: "Active Trips",
+                        activities: activeActivities,
+                        noActivitiesMessage: "No active trips"
+                    )
+                    ActivitiesSection(
+                        sectionTitle: "Planned Trips",
+                        activities: plannedActivities,
+                        noActivitiesMessage: "No planned trips"
+                    )
+                    ActivitiesSection(
+                        sectionTitle: "Past Trips",
+                        activities: completedOrCancelledActivities,
+                        noActivitiesMessage: "No past trips"
+                    )
+                    .task {
+                        await loadActivities()
+                    }
+                    .navigationTitle("My Trips")
                 }
-                .task {
-                    await loadActivities()
-                }
-                .navigationTitle("My Trips")
             }
         }
     }
-
+    
     private func loadActivities() async {
         guard let user = userContext.currentUser else {
             print("Error: No current user found.")
             return
         }
-
+        
         do {
-            activities = try await apiService.getActivities(userID: String(user.userID))
+            loggedInUserActivities = try await apiService.getActivities(userID: String(user.userID))
         } catch {
             print("Unexpected error when fetching activities: \(error)")
+        }
+        plannedActivities = loggedInUserActivities.filter({ $0.isPlanned() })
+        completedOrCancelledActivities = loggedInUserActivities .filter({ $0.isCompleted() || $0.isCancelled() })
+        activeActivities = loggedInUserActivities.filter({ $0.hasStarted() || $0.isPaused() })
+    }
+}
+
+struct ActivitiesSection: View {
+    let sectionTitle: String
+    let activities: [Activity]
+    let noActivitiesMessage: String
+    var body: some View {
+        Text(sectionTitle)
+            .font(.headline)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        if (activities.isEmpty) {
+            Text(noActivitiesMessage)
+                .font(.callout)
+                .italic()
+                .foregroundColor(.gray)
+        } else {
+            LazyVStack(spacing: 12) { // Use LazyVStack instead of List
+                ForEach(activities, id: \.id) { activity in
+                    NavigationLink {
+                        ActivityView(
+                            activity: activity,
+                            viewTitle: "Trip Details"
+                        )
+                    } label: {
+                        ActivityCard(activity: activity)
+                    }
+                }
+            }
         }
     }
 }
