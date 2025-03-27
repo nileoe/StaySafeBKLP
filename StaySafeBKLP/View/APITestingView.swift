@@ -31,6 +31,10 @@ struct APITestingView: View {
                     Button("GET Activities by User ID (1)") {
                         Task { await fetchActivitiesByUser(id: "1", proxy: proxy) }
                     }
+          
+                    Button("GET Contact Activities for User ID (1)") {
+                        Task { await fetchContactActivitiesByUser(id: "1", proxy: proxy) }
+                    }
 
                     // Locations section
                     sectionHeader("Locations")
@@ -181,6 +185,14 @@ struct APITestingView: View {
             title: "GET Activities by User ID \(id) Response",
             proxy: proxy,
             action: { try await apiService.getActivities(userID: id) }
+        )
+    }
+    
+    private func fetchContactActivitiesByUser(id: String, proxy: ScrollViewProxy) async {
+        await executeApiCall(
+            title: "GET Contact Activities by User ID \(id) Response",
+            proxy: proxy,
+            action: { try await apiService.getContactsActivities(userID: id) }
         )
     }
 
