@@ -26,28 +26,54 @@ struct NewTripView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    ZStack(alignment: .bottomTrailing) {
-                        MapSelectionView(
-                            region: $controller.region,
-                            selectedLocation: $controller.selectedLocation,
-                            locationName: $controller.destinationName
-                        )
-                        .frame(height: 250)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(radius: 3)
+                    // Search bar
+                    SearchBarView(
+                        searchText: Binding(
+                            get: { controller.searchQuery },
+                            set: { controller.updateSearchQuery($0) }
+                        ),
+                        isSearchActive: $controller.isSearchActive,
+                        onCancel: {
+                            controller.clearSearch()
+                        },
+                        placeholder: "Search for a destination"
+                    )
 
-                        // Recenter button
-                        Button(action: {
-                            controller.centerOnUserLocation()
-                            followUser = true
-                        }) {
-                            Image(systemName: "location.fill")
-                                .padding(10)
-                                .background(Color.white.opacity(0.8))
-                                .clipShape(Circle())
-                                .shadow(radius: 2)
+                    // Conditional content: Either search results or map
+                    if controller.isSearchActive {
+                        // Show search results when search is active
+                        SearchResultsView(
+                            results: controller.searchResults,
+                            onSelectResult: { result in
+                                controller.selectSearchResult(result)
+                            }
+                        )
+                        .transition(.opacity)
+                    } else {
+                        // Show map when not searching
+                        ZStack(alignment: .bottomTrailing) {
+                            MapSelectionView(
+                                region: $controller.region,
+                                selectedLocation: $controller.selectedLocation,
+                                locationName: $controller.destinationName
+                            )
+                            .frame(height: 250)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .shadow(radius: 3)
+
+                            // Recenter button
+                            Button(action: {
+                                controller.centerOnUserLocation()
+                                followUser = true
+                            }) {
+                                Image(systemName: "location.fill")
+                                    .padding(10)
+                                    .background(Color.white.opacity(0.8))
+                                    .clipShape(Circle())
+                                    .shadow(radius: 2)
+                            }
+                            .padding([.trailing, .bottom], 16)
                         }
-                        .padding([.trailing, .bottom], 16)
                     }
 
                     VStack(spacing: 16) {
