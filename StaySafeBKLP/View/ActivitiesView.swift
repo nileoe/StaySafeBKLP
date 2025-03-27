@@ -14,9 +14,11 @@ struct ActivitiesView: View {
         NavigationView {
             ScrollView {
                 VStack {
-                    Toggle(isOn: $showLoggedInUserActivitiesOnly) {
-                        Text("Show my trips only")
+                    Picker("Trips", selection: $showLoggedInUserActivitiesOnly) {
+                        Text("My Trips").tag(true)
+                        Text("My Contact's Trips").tag(false)
                     }
+                    .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
                     .padding(.top)
                     WideRectangleIconButton(
@@ -83,7 +85,7 @@ struct ActivitiesSection: View {
                 .italic()
                 .foregroundColor(.gray)
         } else {
-            LazyVStack(spacing: 12) { // Use LazyVStack instead of List
+            LazyVStack(spacing: 12) {
                 ForEach(activities, id: \.id) { activity in
                     NavigationLink {
                         ActivityView(

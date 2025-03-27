@@ -80,7 +80,7 @@ struct MapView: View {
             }
             .sheet(isPresented: $showingNewTripView) {
                 NewTripView(onActivityCreated: { activity in
-                    if activity.activityStatusID == 2 {
+                    if activity.hasStarted() {
                         controller.handleActivityCreated(activity)
                     }
                 })
