@@ -168,6 +168,10 @@ struct NewTripView: View {
                 }
             }
             .onAppear {
+                if controller.selectedLocation == nil {
+                    controller.centerOnUserLocation()
+                }
+
                 if controller.selectedLocation != nil {
                     controller.calculateEstimatedArrival()
                 }

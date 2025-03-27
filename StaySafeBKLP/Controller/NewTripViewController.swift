@@ -2,8 +2,9 @@ import MapKit
 import SwiftUI
 
 class NewTripViewController: NSObject, ObservableObject {
-    @Published var region = MapRegionUtility.region(
-        center: CLLocationCoordinate2D(latitude: 51.4014, longitude: -0.3046)
+    @Published var region = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
     @Published var selectedLocation: CLLocationCoordinate2D?
     @Published var destinationName: String = ""
@@ -12,6 +13,7 @@ class NewTripViewController: NSObject, ObservableObject {
     @Published var isCalculatingRoute = false
     @Published var estimatedTravelTime: TimeInterval?
     @Published var estimatedArrivalTime: Date?
+    @Published var hasSelectedDestination = false
 
     // Search properties
     @Published var searchQuery = ""
@@ -45,11 +47,22 @@ class NewTripViewController: NSObject, ObservableObject {
     override init() {
         locationManager = LocationManager()
         super.init()
+        centerMapOnUserLocation()
     }
 
     init(locationManager: LocationManager) {
         self.locationManager = locationManager
         super.init()
+        centerMapOnUserLocation()
+    }
+
+    private func centerMapOnUserLocation() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self, !self.hasSelectedDestination else { return }
+            if let userLocation = self.locationManager.userLocation {
+                self.region = MapRegionUtility.userRegion(userLocation: userLocation)
+            }
+        }
     }
 
     func updateSearchQuery(_ query: String) {
@@ -77,6 +90,7 @@ class NewTripViewController: NSObject, ObservableObject {
                 self.region = MapRegionUtility.region(center: item.placemark.coordinate)
                 self.isSearchActive = false
                 self.searchQuery = ""
+                self.hasSelectedDestination = true
 
                 // Trigger calculations with slight delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -111,6 +125,7 @@ class NewTripViewController: NSObject, ObservableObject {
     func centerOnUserLocation() {
         if let userLocation = locationManager.userLocation {
             region = MapRegionUtility.userRegion(userLocation: userLocation)
+            hasSelectedDestination = false
         }
     }
 
