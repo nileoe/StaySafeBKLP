@@ -65,7 +65,7 @@ struct ActivityView: View {
                                         .foregroundColor(.secondary)
                                     Text(activity.activityFromName ?? "Unknown location")
                                         .font(.body)
-                                    Text(activity.activityLeave)
+                                    Text(DateFormattingUtility.formatISOString(activity.activityLeave))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -76,7 +76,7 @@ struct ActivityView: View {
                                         .foregroundColor(.secondary)
                                     Text(activity.activityToName ?? "Unknown location")
                                         .font(.body)
-                                    Text(activity.activityArrive)
+                                    Text(DateFormattingUtility.formatISOString(activity.activityArrive))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
