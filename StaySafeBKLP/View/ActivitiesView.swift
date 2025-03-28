@@ -146,7 +146,7 @@ struct ActivitiesSection: View {
     let locationsByIDs: [Int:Location]
     let userByIDs: [Int:User]
     let  showContactView: Bool
-    @State private var selectedCard: ContactDetail? = nil
+    @State private var selectedUser: User? = nil
 
     var body: some View {
         Text(sectionTitle)
@@ -161,20 +161,24 @@ struct ActivitiesSection: View {
         } else {
             LazyVStack(spacing: 12) {
                 ForEach(activities, id: \.id) { activity in
+                    let activityUser: User? = userByIDs[activity.activityID]
                     UniversalActivityCard(
                         activity: activity,
                         location: locationsByIDs[activity.activityID],
                         displayMode: showContactView ? .contact: .banner,
-                        contactName: userByIDs[activity.activityID]?.fullName,
-                        contactImageURL: userByIDs[activity.activityID]?.userImageURL,
+                        contactName: activityUser?.fullName,
+                        contactImageURL: activityUser?.userImageURL,
                         onCardTap: {
-                            print("\(activity.activityName) YOOOOOOOOOOOOOOOOOOOOOOYOOOOOOOOOOOOOOOOOOOOOOYOOOOOOOOOOOOOOOOOOOOOO")
+                            selectedUser = activityUser
                         },
                         onViewTrip: nil,
                         onEndTrip: nil
                     )
                     .padding(.horizontal)
                 }
+            }
+            .sheet(item: $selectedUser) { user in
+                ProfileDetailView(profile: user)
             }
         }
     }
