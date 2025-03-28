@@ -158,21 +158,13 @@ struct NewTripView: View {
                                 )
                         )
 
-                        Button(action: createTrip) {
-                            let statusEnum =
-                                ActivityStatus(rawValue: controller.activityStatusID) ?? .planned
-                            Text(statusEnum.buttonText)
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(buttonBackground)
-                                .cornerRadius(12)
-                                .shadow(
-                                    color: Color.primary.opacity(colorScheme == .dark ? 0.2 : 0.1),
-                                    radius: 3, x: 0, y: 2
-                                )
-                        }
+                        GradientActionButton(
+                            title: (ActivityStatus(rawValue: controller.activityStatusID)
+                                ?? .planned).buttonText,
+                            systemImage: nil,
+                            baseColor: buttonBackground,
+                            action: createTrip
+                        )
                         .disabled(
                             controller.selectedLocation == nil || controller.isCreatingActivity
                                 || !controller.isDepartureValid)

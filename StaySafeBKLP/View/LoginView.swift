@@ -66,25 +66,12 @@ struct LoginView: View {
                     }
 
                     // Login button
-                    Button(action: login) {
-                        Text("Login")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue, Color.purple]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                            .font(.headline)
-                            .shadow(
-                                color: Color.primary.opacity(colorScheme == .dark ? 0.3 : 0.1),
-                                radius: 3, x: 0, y: 2
-                            )
-                    }
+                    GradientActionButton(
+                        title: "Login",
+                        systemImage: nil,
+                        baseColor: .blue,
+                        action: login
+                    )
                     .padding(.top, 5)
                 }
                 .padding(20)

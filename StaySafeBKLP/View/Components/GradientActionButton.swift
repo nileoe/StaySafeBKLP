@@ -2,20 +2,22 @@ import SwiftUI
 
 struct GradientActionButton: View {
     let title: String
-    let systemImage: String
+    let systemImage: String?
     let baseColor: Color
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack {
-                Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .semibold))
+                if let systemImage = systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 16, weight: .semibold))
+                }
                 Text(title)
                     .font(.system(size: 16, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
             .background(
                 LinearGradient(
                     gradient: Gradient(

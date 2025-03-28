@@ -15,18 +15,16 @@ struct ProfileView: View {
                 }
                 
                 // Logout Button
-                Button(action: {
-                    userContext.logout()
-                }) {
-                    Text("Log Out")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal, 20)
-                
+                GradientActionButton(
+                    title: "Log Out",
+                    systemImage: nil,
+                    baseColor: .red,
+                    action: {
+                        userContext.logout()
+                    }
+                )
+                .padding(.horizontal)
+
                 Spacer()
                 
                 // API Testing section
