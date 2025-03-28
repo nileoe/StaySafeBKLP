@@ -69,7 +69,6 @@ struct ContactCard: View {
                                 .padding(5)
                                 .background(Color.green)
                                 .cornerRadius(5)
-                            
                         }
                     }
                 }

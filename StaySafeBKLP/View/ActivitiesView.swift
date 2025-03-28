@@ -144,8 +144,9 @@ struct ActivitiesView: View {
             print("Unexpected error when fetching contacts activities: \(error)")
         }
         handleTripSelection(useContactActivities: false)
-        await loadLocationsDict()
-        await loadContactsDict()
+          async let locationsTask = loadLocationsDict()
+          async let contactsTask = loadContactsDict()
+          await (locationsTask, contactsTask)
     }
 }
 
