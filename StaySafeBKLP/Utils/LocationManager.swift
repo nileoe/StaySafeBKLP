@@ -8,7 +8,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     @Published var userLocation: CLLocationCoordinate2D?
 
-    override private init() {
+    override init() {// TODO hack
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest

@@ -10,10 +10,7 @@ struct ContactsView: View {
         NavigationStack {
             VStack {
                 List(contacts, id: \.id) {contact in
-                    ContactCard(contact: contact)
-                        .onTapGesture {
-                            selectedContact = contact
-                        }
+                    ContactCard(contact: contact, onCardTap: { selectedContact = contact })
                 }
                 .task {
                     await loadContacts()
@@ -41,6 +38,36 @@ struct ContactsView: View {
 
 
 struct ContactCard: View {
+    
+    let contact: ContactDetail
+    let onCardTap: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12){
+            AvatarImageView(
+                profileImageUrl: contact.userImageURL,
+                avatarDiameter: 50
+            )
+            
+            Text(contact.fullName)
+                .font(.headline)
+            //            statusPill
+            Spacer()
+            
+        }
+        .onTapGesture(perform: onCardTap) // TODO rectangle
+    }
+}
+
+//private var statusPill: some View {
+//    Text(activityStatusText)
+//        .font(.caption).fontWeight(.medium).foregroundColor(activityStatus.color)
+//        .padding(.horizontal, 12).padding(.vertical, 6)
+//        .background(activityStatus.color.opacity(0.2))
+//        .clipShape(Capsule())
+//}
+
+struct OLD_ContactCard: View {
     
     var contact: ContactDetail
     @State var isTravelling: Bool? = nil
@@ -87,71 +114,90 @@ struct ContactCard: View {
     }
 }
 
-struct ProfileDetailView<Profile: ProfileDisplayable>: View {
-    private let apiService = StaySafeAPIService()
-//    let contact: ContactDetail
-    let profile: Profile
-    @State var currentActivity: Activity? = nil
-    @State var isTravelling: Bool? = nil
+#Preview {
+    VStack {
+        ContactCard(
+            contact: ContactDetail(
+                userID: 123,
+                userFirstname: "John",
+                userLastname: "Doe",
+                userPhone: "+1-234-567-890",
+                userUsername: "johndoe",
+                userPassword: "securepassword123",
+                userLatitude: 37.7749,
+                userLongitude: -122.4194,
+                userTimestamp: 1672531200,
+                userImageURL: "https://static.generated.photos/vue-static/face-generator/landing/wall/13.jpg",
+                userContactID: 456,
+                userContactLabel: "Work",
+                userContactDatecreated: "2024-09-28T00:00:00.000Z"
+            ),
+            onCardTap: { print("Contact card clicked") }
+        )
+        .padding()
 
-    var body: some View {
-        VStack {
-            ProfileDisplay(profile: profile)
-                .padding(.vertical)
+        ContactCard(
+            contact: ContactDetail(
+                userID: 124,
+                userFirstname: "Jane",
+                userLastname: "Smith",
+                userPhone: "+1-987-654-3210",
+                userUsername: "janesmith",
+                userPassword: "anothersecurepassword123",
+                userLatitude: 40.7128,
+                userLongitude: -74.0060,
+                userTimestamp: 1672531500,
+                userImageURL: "https://static.generated.photos/vue-static/face-generator/landing/wall/14.jpg",
+                userContactID: 457,
+                userContactLabel: "Family",
+                userContactDatecreated: "2023-10-12T00:00:00.000Z"
+            ),
+            onCardTap: { print("Jane's card clicked") }
+        )
+        .padding()
 
-            if let travelling = isTravelling {
-                if travelling {
-                    if let activity = currentActivity {
-                        ActivityView(
-                            activity: activity,
-                            viewTitle: "\(profile.userFirstname)'s Current Trip"
-                        )
-                    } else {
-                        Text("Loading current trip...")
-                    }
-                } else {
-                    Text("No current trip to display")
-                        .font(.subheadline)
-                        .italic()
-                }
-            } else {
-                Text("Checking travel status...")
-                    .foregroundColor(.secondary)
-            }
-        }
-        .task {
-            self.isTravelling = await profile.isTravelling()
-            
-            // If the contact is travelling attempt to load the current activity.
-            if self.isTravelling == true {
-                await loadCurrentActivity()
-            }
-        }
-    }
-    
-    private func loadCurrentActivity() async {
-        do {
-            let contactActivities = try await apiService.getActivities(userID: String(profile.userID))
-            let currentActivities = contactActivities.filter { $0.isCurrent() }
-            
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-            
-            // Find the current activity with the most recent (i.e. maximum) departure time.
-            let mostRecentActivity = currentActivities.max { (activityA, activityB) in
-                guard let dateA = dateFormatter.date(from: activityA.activityLeave),
-                      let dateB = dateFormatter.date(from: activityB.activityLeave) else {
-                    return false // If one date fails to parse => don't consider it for sorting
-                }
-                return dateA < dateB
-            }
-            currentActivity = mostRecentActivity
-        } catch {
-            print("Error fetching activities: \(error)")
-        }
+        ContactCard(
+            contact: ContactDetail(
+                userID: 125,
+                userFirstname: "Alice",
+                userLastname: "Brown",
+                userPhone: "+44-20-7946-0958",
+                userUsername: "alicebrown",
+                userPassword: "yetanothersecurepassword456",
+                userLatitude: 51.5074,
+                userLongitude: -0.1278,
+                userTimestamp: 1672531800,
+                userImageURL: "https://static.generated.photos/vue-static/face-generator/landing/wall/15.jpg",
+                userContactID: 458,
+                userContactLabel: "Friend",
+                userContactDatecreated: "2023-01-15T00:00:00.000Z"
+            ),
+            onCardTap: { print("Alice's card clicked") }
+        )
+        .padding()
     }
 }
 
-#Preview {
-    ContactsView()
+struct AvatarImageView: View {
+    let profileImageUrl: String?
+    let avatarDiameter: CGFloat
+    var body: some View {
+        if let profileImageUrl = profileImageUrl, !profileImageUrl.isEmpty {
+            AsyncImage(url: URL(string: profileImageUrl)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Image(systemName: "person.fill")
+                    .foregroundColor(.gray)
+            }
+            .frame(width: avatarDiameter, height: avatarDiameter)
+            .clipShape(Circle())
+        } else {
+            Image(systemName: "person.fill")
+                .foregroundColor(.white)
+                .frame(width: 36, height: 36)
+                .background(Color.gray)
+                .clipShape(Circle())
+        }
+        
+    }
 }
