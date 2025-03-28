@@ -9,7 +9,6 @@ struct ActivitiesView: View {
 
     @State private var userActivities: [Activity] = []
     @State private var contactsActivities: [Activity] = []
-    @State private var contacts: [ContactDetail] = []
     
     @State private var activeActivities: [Activity] = []
     @State private var plannedActivities: [Activity] = []
@@ -144,15 +143,9 @@ struct ActivitiesView: View {
         } catch {
             print("Unexpected error when fetching contacts activities: \(error)")
         }
-        do {
-            contacts = try await apiService
-                .getContacts(userID: String(user.userID))
-        } catch {
-            print("Unexpected error when fetching contacts: \(error)")
-        }
+        handleTripSelection(useContactActivities: false)
         await loadLocationsDict()
         await loadContactsDict()
-        handleTripSelection(useContactActivities: false)
     }
 }
 
