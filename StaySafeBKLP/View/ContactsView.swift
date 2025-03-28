@@ -82,54 +82,6 @@ struct ContactCard: View {
     }
 }
 
-struct OLD_ContactCard: View {
-    
-    var contact: ContactDetail
-    @State var isTravelling: Bool? = nil
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(contact.fullName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                
-                HStack {
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.crop.circle.fill")
-                            .foregroundColor(.green)
-                        Text(contact.userContactLabel)
-                            .font(.caption)
-                    }
-                    Spacer()
-                    if let isTravelling {
-                        if (isTravelling) {
-                            Text("Currently travelling")
-                                .font(.footnote)
-                                .foregroundColor(.white)
-                                .padding(5)
-                                .background(Color.green)
-                                .cornerRadius(5)
-                        }
-                    }
-                }
-                .task {
-                    isTravelling = await contact.isTravelling()
-                    print("\(contact.fullName) is \(isTravelling! ? "yes" : "no") travelling.")
-                }
-            }
-            
-            Spacer()
-            
-        }
-        .padding(12)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-}
-
 #Preview {
     VStack {
         ContactCard(
