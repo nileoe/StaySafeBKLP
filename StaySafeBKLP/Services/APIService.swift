@@ -58,10 +58,6 @@ class APIService {
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if debugMode {
-            print("Making GET request to: \(url)")
-        }
-
         return try await performRequestWithPossibleArrayResponse(request: request)
     }
 
