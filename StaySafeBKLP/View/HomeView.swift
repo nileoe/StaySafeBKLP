@@ -120,7 +120,7 @@ struct HomeView: View {
         }
     }
 
-    private func fetchLocationForActivity(_ activity: Activity) async {
+     func fetchLocationForActivity(_ activity: Activity) async {
         do {
             let location = try await StaySafeAPIService().getLocation(
                 id: String(activity.activityToID))
