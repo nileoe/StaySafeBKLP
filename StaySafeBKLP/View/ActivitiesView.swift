@@ -34,7 +34,7 @@ struct ActivitiesView: View {
                         Text("My Contacts' Trips").tag(true)
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    .onChange(of: showingContactActivities) { newValue in // TODO depracated
+                    .onChange(of: showingContactActivities) { newValue in
                         handleTripSelection(useContactActivities: newValue)
                     }
                     .pickerStyle(SegmentedPickerStyle())

@@ -41,7 +41,7 @@ struct Activity: Codable, Identifiable, Equatable {
     }
     
     func isCurrent() -> Bool {
-        activityStatusID >= 1 && activityStatusID <= 3 // TODO not use?
+        isPlanned() || hasStarted() || isPaused()
     }
     func isPlanned() -> Bool {
         status == .planned

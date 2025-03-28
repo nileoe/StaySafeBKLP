@@ -38,34 +38,49 @@ struct ContactsView: View {
 
 
 struct ContactCard: View {
-    
     let contact: ContactDetail
     let onCardTap: () -> Void
     
+    @State var isTravelling: Bool? = nil
+    
     var body: some View {
-        HStack(spacing: 12){
-            AvatarImageView(
+        HStack(spacing: 12) {
+            ProfileAvatarImage(
                 profileImageUrl: contact.userImageURL,
-                avatarDiameter: 50
+                avatarDiameter: 40
             )
             
-            Text(contact.fullName)
-                .font(.headline)
-            //            statusPill
+            VStack(alignment: .leading) {
+                HStack {
+                    Text(contact.fullName)
+                        .font(.body)
+                }
+                Text(contact.userPhone)
+                    .font(.caption)
+            }
+            Text(contact.userContactLabel)
+                .font(.caption)
+                .foregroundColor(.gray)
             Spacer()
-            
+
+            if let isTravelling {
+                if (isTravelling) {
+                    Text("Travelling")
+                        .font(.caption).fontWeight(.medium).foregroundColor(.green)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(.green.opacity(0.2))
+                        .clipShape(Capsule())
+                }
+            }
         }
-        .onTapGesture(perform: onCardTap) // TODO rectangle
+        .contentShape(Rectangle())
+        
+        .task {
+            isTravelling = await contact.isTravelling()
+        }
+        .onTapGesture(perform: onCardTap)
     }
 }
-
-//private var statusPill: some View {
-//    Text(activityStatusText)
-//        .font(.caption).fontWeight(.medium).foregroundColor(activityStatus.color)
-//        .padding(.horizontal, 12).padding(.vertical, 6)
-//        .background(activityStatus.color.opacity(0.2))
-//        .clipShape(Capsule())
-//}
 
 struct OLD_ContactCard: View {
     
@@ -101,6 +116,7 @@ struct OLD_ContactCard: View {
                 }
                 .task {
                     isTravelling = await contact.isTravelling()
+                    print("\(contact.fullName) is \(isTravelling! ? "yes" : "no") travelling.")
                 }
             }
             
@@ -178,26 +194,3 @@ struct OLD_ContactCard: View {
     }
 }
 
-struct AvatarImageView: View {
-    let profileImageUrl: String?
-    let avatarDiameter: CGFloat
-    var body: some View {
-        if let profileImageUrl = profileImageUrl, !profileImageUrl.isEmpty {
-            AsyncImage(url: URL(string: profileImageUrl)) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                Image(systemName: "person.fill")
-                    .foregroundColor(.gray)
-            }
-            .frame(width: avatarDiameter, height: avatarDiameter)
-            .clipShape(Circle())
-        } else {
-            Image(systemName: "person.fill")
-                .foregroundColor(.white)
-                .frame(width: 36, height: 36)
-                .background(Color.gray)
-                .clipShape(Circle())
-        }
-        
-    }
-}

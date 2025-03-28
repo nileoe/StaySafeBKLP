@@ -107,3 +107,27 @@ struct ProfileDetailView<Profile: ProfileDisplayable>: View {
         }
     }
 }
+
+struct ProfileAvatarImage: View {
+    let profileImageUrl: String?
+    let avatarDiameter: CGFloat
+    var body: some View {
+        if let profileImageUrl = profileImageUrl, !profileImageUrl.isEmpty {
+            AsyncImage(url: URL(string: profileImageUrl)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Image(systemName: "person.fill")
+                    .foregroundColor(.gray)
+            }
+            .frame(width: avatarDiameter, height: avatarDiameter)
+            .clipShape(Circle())
+        } else {
+            Image(systemName: "person.fill")
+                .foregroundColor(.white)
+                .frame(width: 36, height: 36)
+                .background(Color.gray)
+                .clipShape(Circle())
+        }
+        
+    }
+}
