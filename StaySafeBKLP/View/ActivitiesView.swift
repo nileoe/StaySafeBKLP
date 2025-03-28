@@ -3,26 +3,24 @@ import SwiftUI
 struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
     @EnvironmentObject var userContext: UserContext
-    @StateObject private var locationManager = LocationManager()
+    @StateObject private var locationManager = LocationManager.shared
     @StateObject private var controller: MapViewController
     @State private var showingNewTripView = false
 
     @State private var userActivities: [Activity] = []
     @State private var contactsActivities: [Activity] = []
-    
+
     @State private var activeActivities: [Activity] = []
     @State private var plannedActivities: [Activity] = []
     @State private var completedOrCancelledActivities: [Activity] = []
-    
+
     @State private var showingContactActivities: Bool = false
-    @State private var locationsByActivityIDs: [Int:Location] = [:]
-    @State private var usersByActivityIDs: [Int:User] = [:]
-    
+    @State private var locationsByActivityIDs: [Int: Location] = [:]
+    @State private var usersByActivityIDs: [Int: User] = [:]
+
     init() {
-        let locationManager = LocationManager()
-        self._locationManager = StateObject(wrappedValue: locationManager)
         self._controller = StateObject(
-            wrappedValue: MapViewController(locationManager: locationManager))
+            wrappedValue: MapViewController(locationManager: LocationManager.shared))
     }
 
     var body: some View {
@@ -40,19 +38,18 @@ struct ActivitiesView: View {
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
                     .padding(.vertical)
-                    WideRectangleIconButton(
-                        text: "Plan a new Trip",
-                        backgroundColor: .blue,
-                        foregroundColor: .white,
-                        action: { showingNewTripView = true },
-                        imageName: "plus"
-                    )
+                    GradientActionButton(
+                        title: "Plan a New Trip",
+                        systemImage: "plus.circle.fill",
+                        baseColor: .blue,
+                        action: { showingNewTripView = true }
+                    ).padding(.horizontal)
                     ActivitiesSection(
                         sectionTitle: "Active Trips",
                         activities: activeActivities,
                         noActivitiesMessage: "No active trips",
                         locationsByIDs: locationsByActivityIDs,
-                        userByIDs:usersByActivityIDs,
+                        userByIDs: usersByActivityIDs,
                         showingContactView: showingContactActivities
                     )
                     ActivitiesSection(
@@ -60,7 +57,7 @@ struct ActivitiesView: View {
                         activities: plannedActivities,
                         noActivitiesMessage: "No planned trips",
                         locationsByIDs: locationsByActivityIDs,
-                        userByIDs:usersByActivityIDs,
+                        userByIDs: usersByActivityIDs,
                         showingContactView: showingContactActivities
                     )
                     ActivitiesSection(
@@ -68,7 +65,7 @@ struct ActivitiesView: View {
                         activities: completedOrCancelledActivities,
                         noActivitiesMessage: "No past trips",
                         locationsByIDs: locationsByActivityIDs,
-                        userByIDs:usersByActivityIDs,
+                        userByIDs: usersByActivityIDs,
                         showingContactView: showingContactActivities
                     )
                 }
@@ -86,42 +83,47 @@ struct ActivitiesView: View {
             }
         }
     }
-    
+
     private func handleTripSelection(useContactActivities: Bool) {
-        let selectedActivities: [Activity] = useContactActivities ? contactsActivities : userActivities
+        let selectedActivities: [Activity] =
+            useContactActivities ? contactsActivities : userActivities
         plannedActivities = selectedActivities.filter({ $0.isPlanned() })
-            completedOrCancelledActivities = selectedActivities.filter({ $0.isCompleted() || $0.isCancelled() })
-            activeActivities = selectedActivities.filter({ $0.hasStarted() || $0.isPaused() })
+        completedOrCancelledActivities = selectedActivities.filter({
+            $0.isCompleted() || $0.isCancelled()
+        })
+        activeActivities = selectedActivities.filter({ $0.hasStarted() || $0.isPaused() })
     }
-    
+
     private func loadLocationsDict() async {
         do {
             for activity in userActivities {
-                locationsByActivityIDs[activity.activityID] = try await apiService
+                locationsByActivityIDs[activity.activityID] =
+                    try await apiService
                     .getLocation(id: String(activity.activityToID))
             }
             for activity in contactsActivities {
-                locationsByActivityIDs[activity.activityID] = try await apiService
+                locationsByActivityIDs[activity.activityID] =
+                    try await apiService
                     .getLocation(id: String(activity.activityToID))
             }
-        }
-        catch {
+        } catch {
             print("Error fetching location: \(error.localizedDescription)")
         }
     }
-    
+
     private func loadContactsDict() async {
         do {
             for activity in userActivities {
-                usersByActivityIDs[activity.activityID] = try await apiService
+                usersByActivityIDs[activity.activityID] =
+                    try await apiService
                     .getUser(id: String(activity.activityUserID))
             }
             for activity in contactsActivities {
-                usersByActivityIDs[activity.activityID] = try await apiService
+                usersByActivityIDs[activity.activityID] =
+                    try await apiService
                     .getUser(id: String(activity.activityUserID))
             }
-        }
-        catch {
+        } catch {
             print("Error fetching user: \(error.localizedDescription)")
         }
     }
@@ -144,9 +146,9 @@ struct ActivitiesView: View {
             print("Unexpected error when fetching contacts activities: \(error)")
         }
         handleTripSelection(useContactActivities: false)
-          async let locationsTask = loadLocationsDict()
-          async let contactsTask = loadContactsDict()
-          await (locationsTask, contactsTask)
+        async let locationsTask = loadLocationsDict()
+        async let contactsTask = loadContactsDict()
+        await (locationsTask, contactsTask)
     }
 }
 
@@ -154,18 +156,18 @@ struct ActivitiesSection: View {
     let sectionTitle: String
     let activities: [Activity]
     let noActivitiesMessage: String
-    let locationsByIDs: [Int:Location]
-    let userByIDs: [Int:User]
-    let  showingContactView: Bool
+    let locationsByIDs: [Int: Location]
+    let userByIDs: [Int: User]
+    let showingContactView: Bool
     @State private var selectedUser: User? = nil
     @State private var selectedActiviy: Activity? = nil
 
     var body: some View {
         Text(sectionTitle)
             .font(.headline)
-            .padding()
+            .padding().padding(.bottom, -10)
             .frame(maxWidth: .infinity, alignment: .leading)
-        if (activities.isEmpty) {
+        if activities.isEmpty {
             Text(noActivitiesMessage)
                 .font(.callout)
                 .italic()
@@ -177,34 +179,25 @@ struct ActivitiesSection: View {
                     UniversalActivityCard(
                         activity: activity,
                         location: locationsByIDs[activity.activityID],
-                        displayMode: showingContactView ? .contact: .banner,
+                        displayMode: showingContactView ? .contact : .banner,
                         contactName: activityUser?.fullName,
                         contactImageURL: activityUser?.userImageURL,
                         onCardTap: {
-                            handleCardTap(
-                                activity: activity,
-                                user: activityUser
-                            )
+                            selectedActiviy = activity
                         },
                         onViewTrip: nil,
                         onEndTrip: nil
                     )
                     .padding(.horizontal)
+                    .padding(.bottom, 6)
                 }
             }
             .sheet(item: $selectedUser) { user in
                 ProfileDetailView(profile: user)
             }
             .sheet(item: $selectedActiviy) { activity in
-                ActivityView(activity: activity, viewTitle: "My Trip Details")
-                }
-        }
-    }
-    func handleCardTap(activity: Activity?, user: User?) {
-        if (showingContactView) {
-            selectedUser = user
-        } else {
-            selectedActiviy = activity
+                TripDetailsView(activity: activity, onEndTrip: {})
+            }
         }
     }
 }

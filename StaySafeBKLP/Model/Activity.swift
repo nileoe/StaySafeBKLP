@@ -41,7 +41,7 @@ struct Activity: Codable, Identifiable, Equatable {
     }
     
     func isCurrent() -> Bool {
-        isPlanned() || hasStarted() || isPaused()
+        hasStarted() || isPaused()
     }
     func isPlanned() -> Bool {
         status == .planned

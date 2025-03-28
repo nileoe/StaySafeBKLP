@@ -3,120 +3,272 @@ import MapKit
 import SwiftUI
 
 struct TripDetailsView: View {
+    // MARK: - Properties
     let activity: Activity
     let onEndTrip: () -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var isEndingTrip = false
-    @State private var errorMessage: String?
+    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject private var userContext: UserContext
+    @StateObject private var controller: TripDetailsViewController
+    @State private var contactName: String = "Loading..."
 
+    private var isOwner: Bool {
+        userContext.currentUser?.userID == controller.currentActivity.activityUserID
+    }
+
+    // MARK: - Initialization
+    init(activity: Activity, onEndTrip: @escaping () -> Void) {
+        self.activity = activity
+        self.onEndTrip = onEndTrip
+        let isOwner = UserContext.shared.currentUser?.userID == activity.activityUserID
+        self._controller = StateObject(
+            wrappedValue: TripDetailsViewController(activity: activity, isOwner: isOwner))
+    }
+
+    // MARK: - Body
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    SectionRow(imageName: "mappin.and.ellipse", imageColor: .red, rowText: activity.activityToName ?? "Destination")
-                    SectionRow(imageName: "clock", rowText: "Departure: \(DateFormattingUtility.formatISOString(activity.activityLeave, style: DateFormattingUtility.timeOnly))")
-                    SectionRow(imageName: "flag.checkered", rowText: "Estimated arrival: \(DateFormattingUtility.formatISOString(activity.activityArrive, style: DateFormattingUtility.timeOnly))")
-                }
+            ZStack {
+                Color(colorScheme == .dark ? UIColor(white: 0.10, alpha: 1.0) : UIColor.systemGray6)
+                    .ignoresSafeArea()
 
-                Section {
-                    if isEndingTrip {
-                        HStack {
-                            Spacer()
-                            ProgressView("Ending trip...")
-                            Spacer()
-                        }
-                    } else {
-                        Button(action: cancelTrip) {
-                            HStack {
-                                Spacer()
-                                Text("End Trip")
-                                    .foregroundColor(.red)
-                                Spacer()
-                            }
+                ScrollView {
+                    VStack(spacing: 20) {
+                        mapSection
+                        infoCard
+
+                        if isOwner {
+                            actionButtons
                         }
                     }
-
-                    if let error = errorMessage {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                    }
+                    .padding()
                 }
             }
             .navigationTitle("Trip Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
+                ToolbarItem(placement: .navigationBarTrailing) { Button("Done") { dismiss() } }
+            }
+            .disabled(
+                controller.isEndingTrip || controller.isPausingTrip || controller.isResumingTrip
+            )
+            .onAppear {
+                Task {
+                    await controller.refreshActivity()
+                    if !isOwner { fetchContactName() }
                 }
             }
-            .disabled(isEndingTrip)
+            .onDisappear { controller.cleanup() }
+        }
+    }
+
+    // MARK: - Components
+
+    // Map Section
+    private var mapSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Trip Route").font(.headline).padding(.leading)
+
+            Group {
+                if !controller.tripPositions.isEmpty {
+                    TrackingMapView(
+                        activity: controller.currentActivity,
+                        positions: controller.tripPositions,
+                        showUserLocation: isOwner
+                    )
+                    .frame(height: 250)
+                } else if controller.isLoadingPositions {
+                    loadingMapPlaceholder
+                } else {
+                    emptyMapPlaceholder
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: Color.primary.opacity(colorScheme == .dark ? 0.2 : 0.1), radius: 3)
+        }
+    }
+
+    private var loadingMapPlaceholder: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color(.systemBackground))
+            .frame(height: 250)
+            .overlay { ProgressView("Loading trip data...") }
+    }
+
+    private var emptyMapPlaceholder: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color(.systemBackground))
+            .frame(height: 250)
+            .overlay {
+                VStack {
+                    Image(systemName: "map").font(.largeTitle).foregroundColor(.secondary)
+                    Text("No tracking data available").foregroundColor(.secondary)
+                }
+            }
+    }
+
+    // Info Card
+    private var infoCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if !isOwner {
+                InfoRow(
+                    icon: "person.circle.fill", iconColor: .blue,
+                    title: "Contact", value: contactName)
+                Divider()
+            }
+
+            InfoRow(
+                icon: "mappin.and.ellipse", iconColor: .red,
+                title: "Destination",
+                value: controller.currentActivity.activityToName ?? "Unknown location")
+            Divider()
+
+            InfoRow(
+                icon: "clock", title: "Departure",
+                value: DateFormattingUtility.formatISOString(
+                    controller.currentActivity.activityLeave,
+                    style: DateFormattingUtility.mediumDateTime))
+            Divider()
+
+            InfoRow(
+                icon: "flag.checkered", title: "Estimated Arrival",
+                value: DateFormattingUtility.formatISOString(
+                    controller.currentActivity.activityArrive,
+                    style: DateFormattingUtility.mediumDateTime))
+            Divider()
+
+            if let status = ActivityStatus(rawValue: controller.currentActivity.activityStatusID) {
+                InfoRow(
+                    icon: status.icon, iconColor: status.color,
+                    title: "Status",
+                    value: controller.currentActivity.activityStatusName ?? "Unknown")
+            }
+
+            if let latestPosition = controller.tripPositions.last {
+                Divider()
+                InfoRow(
+                    icon: "location.fill", iconColor: .blue,
+                    title: "Last Update",
+                    value: DateFormattingUtility.formatTime(
+                        Date(timeIntervalSince1970: TimeInterval(latestPosition.positionTimestamp)))
+                )
+            }
+        }
+        .padding()
+        .background(cardBackground)
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color(.systemBackground))
+            .shadow(color: Color.primary.opacity(colorScheme == .dark ? 0.2 : 0.1), radius: 3)
+    }
+
+    // Action Buttons
+    private var actionButtons: some View {
+        VStack(spacing: 16) {
+            switch ActivityStatus(rawValue: controller.currentActivity.activityStatusID) {
+            case .planned:
+                GradientActionButton(
+                    title: "Start Now", systemImage: "play.circle.fill",
+                    baseColor: ActivityStatus.started.color, action: startTrip)
+                GradientActionButton(
+                    title: "Cancel Trip", systemImage: "xmark.circle.fill",
+                    baseColor: ActivityStatus.cancelled.color, action: cancelTrip)
+
+            case .started:
+                GradientActionButton(
+                    title: "Pause Trip", systemImage: "pause.circle.fill",
+                    baseColor: ActivityStatus.paused.color, action: pauseTrip)
+                GradientActionButton(
+                    title: "End Trip", systemImage: "xmark.circle.fill",
+                    baseColor: ActivityStatus.cancelled.color, action: cancelTrip)
+
+            case .paused:
+                GradientActionButton(
+                    title: "Resume Trip", systemImage: "play.circle.fill",
+                    baseColor: ActivityStatus.started.color, action: resumeTrip)
+                GradientActionButton(
+                    title: "End Trip", systemImage: "xmark.circle.fill",
+                    baseColor: ActivityStatus.cancelled.color, action: cancelTrip)
+
+            case .cancelled, .completed, .none:
+                EmptyView()
+            }
+        }
+    }
+
+    // MARK: - Helper Methods
+    private func fetchContactName() {
+        Task {
+            do {
+                let user = try await StaySafeAPIService().getUser(
+                    id: String(controller.currentActivity.activityUserID))
+                await MainActor.run { contactName = user.fullName }
+            } catch {
+                await MainActor.run { contactName = "Trip Owner" }
+            }
         }
     }
 
     private func cancelTrip() {
-        isEndingTrip = true
-        errorMessage = nil
-
-        // Update the activity status to Cancelled using the enum
         Task {
-            do {
-                let api = StaySafeAPIService()
+            if await controller.cancelTrip() {
+                onEndTrip()
+                dismiss()
+            }
+        }
+    }
 
-                var updatedActivity = activity
-                updatedActivity.activityStatusID = ActivityStatus.cancelled.rawValue
-                updatedActivity.activityStatusName = ActivityStatus.cancelled.name
+    private func startTrip() {
+        Task { if await controller.startTrip() { dismiss() } }
+    }
 
-                // Save the updated activity
-                _ = try await api.updateActivity(activity: updatedActivity)
+    private func pauseTrip() {
+        Task {
+            if await controller.pauseTrip() {
+                onEndTrip()
+                dismiss()
+            }
+        }
+    }
 
-                // Update UI on the main thread
-                await MainActor.run {
-                    isEndingTrip = false
-                    // Call the onEndTrip closure to update the UI
-                    onEndTrip()
-                    dismiss()
-                }
-            } catch {
-                await MainActor.run {
-                    isEndingTrip = false
-                    errorMessage = "Failed to end trip: \(error.localizedDescription)"
-                    print("Error cancelling trip: \(error)")
-                }
+    private func resumeTrip() {
+        Task {
+            if await controller.resumeTrip() {
+                onEndTrip()
+                dismiss()
             }
         }
     }
 }
 
-struct SectionRow: View {
-    let imageName: String?
-    let imageColor: Color
-    let rowText: String
-    let isItalic: Bool
+// MARK: - Helper Views
+struct InfoRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let value: String
 
-    init(
-        imageName: String? = nil,
-        imageColor: Color = .black,
-        rowText: String,
-        isItalic: Bool = false
-    ) {
-        self.imageName = imageName
-        self.imageColor = imageColor
-        self.rowText = rowText
-        self.isItalic = isItalic
+    init(icon: String, iconColor: Color = .primary, title: String, value: String) {
+        self.icon = icon
+        self.iconColor = iconColor
+        self.title = title
+        self.value = value
     }
-    
+
     var body: some View {
         HStack {
-            if let imageName {
-                Image(systemName: imageName)
-                .foregroundColor(imageColor)
+            Image(systemName: icon)
+                .foregroundColor(iconColor)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.caption).foregroundColor(.secondary)
+                Text(value).font(.headline)
             }
-            Text(rowText)
-                .italic(isItalic)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -142,4 +294,3 @@ struct SectionRow: View {
         onEndTrip: { print("Trip ended") }
     )
 }
-
