@@ -25,7 +25,7 @@ struct UniversalActivityCard: View {
     }
 
     private var locationDescription: String {
-        location?.locationDescription ?? location?.locationAddress ?? "Address unavailable"
+        location?.locationDescription ?? location?.locationAddress ?? "Loading address ..."
     }
 
     private var estimatedArrival: String {
@@ -149,7 +149,7 @@ struct UniversalActivityCard: View {
                     .clipShape(Circle())
             }
 
-            Text("\(contactName ?? "Someone")'s Trip")
+            Text(contactName.map { "\($0)'s Trip" } ?? "Loading name...")
                 .font(.headline)
 
             Spacer()
