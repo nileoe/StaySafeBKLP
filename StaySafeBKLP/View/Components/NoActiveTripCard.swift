@@ -29,23 +29,12 @@ struct NoActiveTripCard: View {
             .padding(.horizontal, 6)
 
             // Button remains as a separate row
-            Button(action: onCreateTrip) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Plan a New Trip")
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.purple]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .foregroundColor(.white)
-                .cornerRadius(10)
-            }
+            GradientActionButton(
+                title: "Plan a New Trip",
+                systemImage: "plus.circle.fill",
+                baseColor: .blue,
+                action: onCreateTrip
+            )
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground))

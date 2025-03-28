@@ -75,9 +75,18 @@ struct TrackingMapView: UIViewRepresentable {
             mapView.addOverlay(glowPolyline)
             mapView.addOverlay(mainPolyline)
 
-            // Set region using MKCoordinateRegion
-            let region = MKCoordinateRegion(mainPolyline.boundingMapRect)
-            mapView.setRegion(region, animated: true)
+            // Create a better region with padding
+            let rect = mainPolyline.boundingMapRect
+            let padding = rect.size.width * 0.3
+            let paddedRect = MKMapRect(
+                x: rect.origin.x - padding,
+                y: rect.origin.y - padding,
+                width: rect.size.width + (padding * 2),
+                height: rect.size.height + (padding * 2)
+            )
+
+            // Set region with animation
+            mapView.setVisibleMapRect(paddedRect, animated: true)
         } else {
             mapView.setRegion(
                 MapRegionUtility.region(

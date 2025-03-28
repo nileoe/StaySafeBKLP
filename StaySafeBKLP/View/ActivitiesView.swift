@@ -38,13 +38,12 @@ struct ActivitiesView: View {
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
                     .padding(.vertical)
-                    WideRectangleIconButton(
-                        text: "Plan a new Trip",
-                        backgroundColor: .blue,
-                        foregroundColor: .white,
-                        action: { showingNewTripView = true },
-                        imageName: "plus"
-                    )
+                    GradientActionButton(
+                        title: "Plan a New Trip",
+                        systemImage: "plus.circle.fill",
+                        baseColor: .blue,
+                        action: { showingNewTripView = true }
+                    ).padding(.horizontal)
                     ActivitiesSection(
                         sectionTitle: "Active Trips",
                         activities: activeActivities,
@@ -166,7 +165,7 @@ struct ActivitiesSection: View {
     var body: some View {
         Text(sectionTitle)
             .font(.headline)
-            .padding()
+            .padding().padding(.bottom, -10)
             .frame(maxWidth: .infinity, alignment: .leading)
         if activities.isEmpty {
             Text(noActivitiesMessage)
@@ -190,6 +189,7 @@ struct ActivitiesSection: View {
                         onEndTrip: nil
                     )
                     .padding(.horizontal)
+                    .padding(.bottom, 6)
                 }
             }
             .sheet(item: $selectedUser) { user in
