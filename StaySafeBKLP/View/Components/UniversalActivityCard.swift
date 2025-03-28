@@ -132,23 +132,10 @@ struct UniversalActivityCard: View {
     // Contact header - used for contact style
     private var contactHeader: some View {
         HStack(spacing: 12) {
-            if let contactImageURL = contactImageURL, !contactImageURL.isEmpty {
-                AsyncImage(url: URL(string: contactImageURL)) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.fill")
-                        .foregroundColor(.gray)
-                }
-                .frame(width: 36, height: 36)
-                .clipShape(Circle())
-            } else {
-                Image(systemName: "person.fill")
-                    .foregroundColor(.white)
-                    .frame(width: 36, height: 36)
-                    .background(Color.gray)
-                    .clipShape(Circle())
-            }
-
+            ProfileAvatarImage(
+                profileImageUrl: contactImageURL, avatarDiameter: 36
+            )
+           
             Text(contactName.map { "\($0)'s Trip" } ?? "Loading name...")
                 .font(.headline)
 
