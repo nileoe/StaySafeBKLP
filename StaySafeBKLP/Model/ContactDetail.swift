@@ -59,10 +59,4 @@ struct ContactDetail: Codable, Identifiable {
     }
 }
 
-protocol ProfileDisplayable {
-    var fullName: String { get }
-    var userImageURL: String? { get }
-    var userUsername: String { get }
-    var userPhone: String { get }
-}
 extension ContactDetail: ProfileDisplayable {}

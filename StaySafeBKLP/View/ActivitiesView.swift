@@ -146,7 +146,8 @@ struct ActivitiesSection: View {
     let locationsByIDs: [Int:Location]
     let userByIDs: [Int:User]
     let  showContactView: Bool
-    
+    @State private var selectedCard: ContactDetail? = nil
+
     var body: some View {
         Text(sectionTitle)
             .font(.headline)
@@ -167,6 +168,7 @@ struct ActivitiesSection: View {
                         contactName: userByIDs[activity.activityID]?.fullName,
                         contactImageURL: userByIDs[activity.activityID]?.userImageURL,
                         onCardTap: {
+                            print("\(activity.activityName) YOOOOOOOOOOOOOOOOOOOOOOYOOOOOOOOOOOOOOOOOOOOOOYOOOOOOOOOOOOOOOOOOOOOO")
                         },
                         onViewTrip: nil,
                         onEndTrip: nil

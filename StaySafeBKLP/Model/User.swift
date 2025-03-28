@@ -3,7 +3,7 @@ import Foundation
 /// Represents a system user, including individuals undertaking activities and those monitoring them.
 struct User: Codable, Identifiable {
     /// Unique identifier for the user
-    var userID: Int  // Changed from String to Int
+    var userID: Int
     /// First name of the user
     var userFirstname: String
     /// Last name of the user
@@ -24,11 +24,26 @@ struct User: Codable, Identifiable {
     var userImageURL: String?
 
     /// Computed id property for Identifiable conformance
-    var id: Int { userID }  // Changed to match userID type
+    var id: Int { userID }
 
     /// Computed full name property
     var fullName: String {
         "\(userFirstname) \(userLastname)"
+    }
+    
+    func isTravelling() async -> Bool {
+        let apiService = StaySafeAPIService()
+        do {
+            let activities = try await apiService.getActivities(userID: String(userID))
+            for activity in activities {
+                if (activity.isCurrent()) {
+                    return true
+                }
+            }
+        } catch {
+            print("Error fetching activities: \(error)")
+        }
+        return false
     }
 
     enum CodingKeys: String, CodingKey {

@@ -22,7 +22,7 @@ struct ContactsView: View {
             .navigationTitle("Contacts")
         }
         .sheet(item: $selectedContact) { contact in
-                    ContactDetailView(contact: contact)
+                    ProfileDetailView(profile: contact)
                 }
     }
     
@@ -88,15 +88,16 @@ struct ContactCard: View {
     }
 }
 
-struct ContactDetailView: View {
+struct ProfileDetailView<Profile: ProfileDisplayable>: View {
     private let apiService = StaySafeAPIService()
-    var contact: ContactDetail
+//    let contact: ContactDetail
+    let profile: Profile
     @State var currentActivity: Activity? = nil
     @State var isTravelling: Bool? = nil
 
     var body: some View {
         VStack {
-            ProfileDisplay(profile: contact)
+            ProfileDisplay(profile: profile)
                 .padding(.vertical)
 
             if let travelling = isTravelling {
@@ -104,7 +105,7 @@ struct ContactDetailView: View {
                     if let activity = currentActivity {
                         ActivityView(
                             activity: activity,
-                            viewTitle: "\(contact.userFirstname)'s Current Trip"
+                            viewTitle: "\(profile.userFirstname)'s Current Trip"
                         )
                     } else {
                         Text("Loading current trip...")
@@ -120,7 +121,7 @@ struct ContactDetailView: View {
             }
         }
         .task {
-            self.isTravelling = await contact.isTravelling()
+            self.isTravelling = await profile.isTravelling()
             
             // If the contact is travelling attempt to load the current activity.
             if self.isTravelling == true {
@@ -131,7 +132,7 @@ struct ContactDetailView: View {
     
     private func loadCurrentActivity() async {
         do {
-            let contactActivities = try await apiService.getActivities(userID: String(contact.userID))
+            let contactActivities = try await apiService.getActivities(userID: String(profile.userID))
             let currentActivities = contactActivities.filter { $0.isCurrent() }
             
             let dateFormatter = DateFormatter()
