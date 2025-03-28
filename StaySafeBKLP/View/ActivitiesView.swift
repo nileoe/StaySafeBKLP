@@ -22,7 +22,7 @@ struct ActivitiesView: View {
         self._controller = StateObject(
             wrappedValue: MapViewController(locationManager: LocationManager.shared))
     }
-
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -32,8 +32,10 @@ struct ActivitiesView: View {
                         Text("My Contacts' Trips").tag(true)
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    .onChange(of: showingContactActivities) { newValue in
-                        handleTripSelection(useContactActivities: newValue)
+                    .onChange(of: showingContactActivities) {
+                        handleTripSelection(
+                            useContactActivities: showingContactActivities
+                        )
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
@@ -127,7 +129,7 @@ struct ActivitiesView: View {
             print("Error fetching user: \(error.localizedDescription)")
         }
     }
-
+    
     private func loadData() async {
         guard let user = userContext.currentUser else {
             print("Error: No current user found.")
@@ -146,9 +148,10 @@ struct ActivitiesView: View {
             print("Unexpected error when fetching contacts activities: \(error)")
         }
         handleTripSelection(useContactActivities: false)
-        async let locationsTask = loadLocationsDict()
-        async let contactsTask = loadContactsDict()
-        await (locationsTask, contactsTask)
+        async let _ = loadLocationsDict()
+        async let _ = loadContactsDict()
+        await loadLocationsDict()
+        await loadContactsDict()
     }
 }
 
