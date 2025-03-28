@@ -41,17 +41,10 @@ class NewTripViewController: NSObject, ObservableObject {
     @Published var isDepartureValid: Bool = true
     @Published var departureValidationMessage: String = ""
 
-    private let locationManager: LocationManager
+    private let locationManager = LocationManager.shared
     private let activityService = ActivityCreationService()
 
     override init() {
-        locationManager = LocationManager()
-        super.init()
-        centerMapOnUserLocation()
-    }
-
-    init(locationManager: LocationManager) {
-        self.locationManager = locationManager
         super.init()
         centerMapOnUserLocation()
     }

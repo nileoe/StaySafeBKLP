@@ -99,4 +99,14 @@ struct DateFormattingUtility {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+
+    /// Parse an ISO8601 string to a Date object
+    static func parseISOString(_ isoString: String) -> Date? {
+        return iso8601WithMilliseconds.date(from: isoString)
+    }
+
+    /// Convert a Date to an ISO8601 string
+    static func formatToISOString(_ date: Date) -> String {
+        return iso8601.string(from: date)
+    }
 }

@@ -6,21 +6,18 @@ import SwiftUI
 struct NewTripView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) var colorScheme
-    @StateObject private var locationManager = LocationManager()
     @StateObject private var controller: NewTripViewController
     @State private var followUser = false
     @State private var activityCreatedCancellable: AnyCancellable?
     @State private var showingConfirmation = false
     @State private var confirmationMessage = ""
 
+    private var locationManager = LocationManager.shared
     var onActivityCreated: ((Activity) -> Void)?
 
     init(onActivityCreated: ((Activity) -> Void)? = nil) {
         self.onActivityCreated = onActivityCreated
-        let locationManager = LocationManager()
-        self._locationManager = StateObject(wrappedValue: locationManager)
-        self._controller = StateObject(
-            wrappedValue: NewTripViewController(locationManager: locationManager))
+        self._controller = StateObject(wrappedValue: NewTripViewController())
     }
 
     var body: some View {

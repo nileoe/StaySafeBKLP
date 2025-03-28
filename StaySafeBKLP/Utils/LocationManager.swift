@@ -2,12 +2,13 @@ import CoreLocation
 import UIKit
 
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
+    static let shared: LocationManager = LocationManager()
+    let manager = CLLocationManager()
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
     @Published var userLocation: CLLocationCoordinate2D?
 
-    override init() {
+    override private init() {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest

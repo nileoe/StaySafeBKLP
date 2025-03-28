@@ -87,5 +87,5 @@ class ActivityCreationService {
     }
 
     // MARK: - Dependencies
-    private let locationManager = LocationManager()
+    private let locationManager = LocationManager.shared
 }
