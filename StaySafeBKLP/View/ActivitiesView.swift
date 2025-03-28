@@ -3,7 +3,10 @@ import SwiftUI
 struct ActivitiesView: View {
     private let apiService = StaySafeAPIService()
     @EnvironmentObject var userContext: UserContext
-    
+    @StateObject private var locationManager = LocationManager()
+    @StateObject private var controller: MapViewController
+    @State private var showingNewTripView = false
+
     @State private var userActivities: [Activity] = []
     @State private var contactsActivities: [Activity] = []
     @State private var contacts: [ContactDetail] = []
@@ -12,20 +15,27 @@ struct ActivitiesView: View {
     @State private var plannedActivities: [Activity] = []
     @State private var completedOrCancelledActivities: [Activity] = []
     
-    @State private var showContactActivities: Bool = true
+    @State private var showingContactActivities: Bool = false
     @State private var locationsByActivityIDs: [Int:Location] = [:]
     @State private var usersByActivityIDs: [Int:User] = [:]
+    
+    init() {
+        let locationManager = LocationManager()
+        self._locationManager = StateObject(wrappedValue: locationManager)
+        self._controller = StateObject(
+            wrappedValue: MapViewController(locationManager: locationManager))
+    }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack {
-                    Picker("Trips", selection: $showContactActivities) {
+                    Picker("Trips", selection: $showingContactActivities) {
+                        Text("My Trips").tag(false)
                         Text("My Contacts' Trips").tag(true)
-                        Text("My Trips Only").tag(false)
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    .onChange(of: showContactActivities) { newValue in // TODO depracated
+                    .onChange(of: showingContactActivities) { newValue in // TODO depracated
                         handleTripSelection(useContactActivities: newValue)
                     }
                     .pickerStyle(SegmentedPickerStyle())
@@ -35,7 +45,7 @@ struct ActivitiesView: View {
                         text: "Plan a new Trip",
                         backgroundColor: .blue,
                         foregroundColor: .white,
-                        action: {print("ok")},
+                        action: { showingNewTripView = true },
                         imageName: "plus"
                     )
                     ActivitiesSection(
@@ -44,7 +54,7 @@ struct ActivitiesView: View {
                         noActivitiesMessage: "No active trips",
                         locationsByIDs: locationsByActivityIDs,
                         userByIDs:usersByActivityIDs,
-                        showContactView: showContactActivities
+                        showingContactView: showingContactActivities
                     )
                     ActivitiesSection(
                         sectionTitle: "Planned Trips",
@@ -52,7 +62,7 @@ struct ActivitiesView: View {
                         noActivitiesMessage: "No planned trips",
                         locationsByIDs: locationsByActivityIDs,
                         userByIDs:usersByActivityIDs,
-                        showContactView: showContactActivities
+                        showingContactView: showingContactActivities
                     )
                     ActivitiesSection(
                         sectionTitle: "Past Trips",
@@ -60,13 +70,20 @@ struct ActivitiesView: View {
                         noActivitiesMessage: "No past trips",
                         locationsByIDs: locationsByActivityIDs,
                         userByIDs:usersByActivityIDs,
-                        showContactView: showContactActivities
+                        showingContactView: showingContactActivities
                     )
                 }
                 .task {
                     await loadData()
                 }
                 .navigationTitle("Trips")
+            }
+            .sheet(isPresented: $showingNewTripView) {
+                NewTripView(onActivityCreated: { activity in
+                    if activity.hasStarted() {
+                        controller.handleActivityCreated(activity)
+                    }
+                })
             }
         }
     }
@@ -135,7 +152,7 @@ struct ActivitiesView: View {
         }
         await loadLocationsDict()
         await loadContactsDict()
-        handleTripSelection(useContactActivities: true)
+        handleTripSelection(useContactActivities: false)
     }
 }
 
@@ -145,8 +162,9 @@ struct ActivitiesSection: View {
     let noActivitiesMessage: String
     let locationsByIDs: [Int:Location]
     let userByIDs: [Int:User]
-    let  showContactView: Bool
+    let  showingContactView: Bool
     @State private var selectedUser: User? = nil
+    @State private var selectedActiviy: Activity? = nil
 
     var body: some View {
         Text(sectionTitle)
@@ -165,11 +183,14 @@ struct ActivitiesSection: View {
                     UniversalActivityCard(
                         activity: activity,
                         location: locationsByIDs[activity.activityID],
-                        displayMode: showContactView ? .contact: .banner,
+                        displayMode: showingContactView ? .contact: .banner,
                         contactName: activityUser?.fullName,
                         contactImageURL: activityUser?.userImageURL,
                         onCardTap: {
-                            selectedUser = activityUser
+                            handleCardTap(
+                                activity: activity,
+                                user: activityUser
+                            )
                         },
                         onViewTrip: nil,
                         onEndTrip: nil
@@ -180,10 +201,16 @@ struct ActivitiesSection: View {
             .sheet(item: $selectedUser) { user in
                 ProfileDetailView(profile: user)
             }
+            .sheet(item: $selectedActiviy) { activity in
+                ActivityView(activity: activity, viewTitle: "My Trip Details")
+                }
         }
     }
-}
-
-#Preview {
-    ActivitiesView()
+    func handleCardTap(activity: Activity?, user: User?) {
+        if (showingContactView) {
+            selectedUser = user
+        } else {
+            selectedActiviy = activity
+        }
+    }
 }
